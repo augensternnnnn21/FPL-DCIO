@@ -1,12 +1,27 @@
+# Ignore data files
+data/*
+!data/README.md
+!data/sample/
+
+# Python
 __pycache__/
 *.py[cod]
-*.class
-.env
-.venv
-env/
+*$py.class
+
+# Virtual Environment
 venv/
-ENV/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
 *.log
+
+# Processed data
+*_processed.csv
+
+# Other
 .DS_Store
-data/
-experiments/
