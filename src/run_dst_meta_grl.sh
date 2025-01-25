@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# 设置环境变量
-export PYTHONPATH="$PYTHONPATH:$(pwd)"
+# 添加项目根目录到 PYTHONPATH
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+
+# 打印环境变量
+echo "PYTHONPATH: $PYTHONPATH"
+echo "Current directory: $(pwd)"
 
 # 预处理数据
 echo "Preprocessing data..."

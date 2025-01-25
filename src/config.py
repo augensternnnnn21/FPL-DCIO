@@ -1,85 +1,148 @@
 import os
 import torch
+from dataclasses import dataclass, field, fields
+from typing import List, Dict, Any
 
-# 获取项目根目录的绝对路径
+# 项目根目录
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print("\nDEBUG: Initial PROJECT_ROOT:", PROJECT_ROOT)
 
-# 路径配置
-BASE_DATA_PATH = os.path.join(PROJECT_ROOT, "data")
-RAW_DATA_PATH = os.path.join(BASE_DATA_PATH, "raw")
-PROCESSED_DATA_PATH = os.path.join(BASE_DATA_PATH, "processed")
-MODEL_SAVE_PATH = os.path.join(PROJECT_ROOT, "models")
+# 确保导出所有需要的类和变量
+__all__ = ['PROJECT_ROOT', 'ExperimentConfig', 'ModelConfig', 'TrainingConfig', 'EnvironmentConfig', 'DEFAULT_CONFIG', 'COVID_CONFIG']
 
-# 确保目录存在
-os.makedirs(RAW_DATA_PATH, exist_ok=True)
-os.makedirs(PROCESSED_DATA_PATH, exist_ok=True)
-os.makedirs(MODEL_SAVE_PATH, exist_ok=True)
+@dataclass
+class ModelConfig:
+    """模型配置"""
+    input_dim: int = 12
+    hidden_dim: int = 64
+    num_heads: int = 4
+    num_layers: int = 2
+    dropout: float = 0.1
+    temporal_window: int = 5
+    max_players: int = 600
 
-# 游戏参数
-BUDGET = 100.0
-NUM_PLAYERS = 600  # 估计值，实际会根据数据调整
+@dataclass
+class TrainingConfig:
+    num_episodes: int = 1000
+    batch_size: int = 32
+    learning_rate: float = 0.0001
+    epsilon_start: float = 1.0
+    epsilon_end: float = 0.01
+    epsilon_decay: float = 0.995
+    gamma: float = 0.99
+    tau: float = 0.005
+    grad_clip: float = 1.0
 
-# 训练参数
-TOTAL_EPISODES = 1000
-BATCH_SIZE = 32
-REPLAY_BUFFER_SIZE = 100000
-MIN_REPLAY_SIZE = 5000
+@dataclass
+class EnvironmentConfig:
+    budget: float = 100.0
+    max_players: int = 15
+    history_length: int = 5
 
-# 学习参数
-META_LR = 0.0001          # 元学习率
-INNER_LR = 0.001          # 内循环学习率
-META_BATCH_SIZE = 4       # 元批次大小
-INNER_STEPS = 5           # 内循环步数
-GAMMA = 0.99              # 折扣因子
-TAU = 0.005              # 目标网络软更新系数
+@dataclass
+class GeneralizationConfig:
+    num_test_episodes: int = 10
+    perturbation_ratio: float = 0.1
+    adaptation_steps: int = 100
+    domain_lambda: float = 1.0
 
-# 探索参数
-EPSILON_START = 1.0
-EPSILON_END = 0.01
-EPSILON_DECAY = 0.995
+@dataclass
+class ExperimentConfig:
+    """实验配置"""
+    # 设备配置
+    device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    # 随机种子
+    random_seed: int = 42
+    
+    # 实验运行次数
+    num_runs: int = 5
+    
+    # 数据配置
+    train_seasons: List[str] = field(default_factory=lambda: [
+        '2016-17', '2017-18', '2018-19', '2019-20', '2020-21'
+    ])
+    val_season: str = '2021-22'
+    test_season: str = '2022-23'
+    
+    # 路径配置
+    output_path: str = field(
+        default_factory=lambda: os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'experiments')
+    )
+    
+    # 训练配置
+    training: TrainingConfig = field(default_factory=TrainingConfig)
+    
+    # 模型配置
+    model: ModelConfig = field(default_factory=ModelConfig)
+    
+    # 泛化配置
+    generalization: GeneralizationConfig = field(default_factory=GeneralizationConfig)
+    
+    # 日志配置
+    log_interval: int = 10
+    save_interval: int = 100
+    evaluate_interval: int = 50
+    
+    def __post_init__(self):
+        """初始化后的处理"""
+        print("\nDEBUG: ExperimentConfig post_init")
+        print(f"self.__dict__: {self.__dict__}")
+        # 确保输出目录存在
+        os.makedirs(self.output_path, exist_ok=True)
 
-# 网络参数
-HIDDEN_DIM = 256
-POSITION_EMBED_DIM = 32
-NUM_ATTENTION_HEADS = 4
-DROPOUT_RATE = 0.1
+def get_default_config() -> ExperimentConfig:
+    """获取默认配置"""
+    return ExperimentConfig()
 
-# 奖励权重
-REWARD_WEIGHTS = {
-    'points': 0.7,        # 得分权重
-    'formation': 0.1,     # 阵型权重
-    'budget': 0.1,        # 预算权重
-    'stability': 0.05,    # 稳定性权重
-    'potential': 0.05     # 潜力权重
+# 为了保持向后兼容
+DEFAULT_CONFIG = get_default_config()
+
+# 创建 COVID 配置
+print("\nDEBUG: Creating COVID_CONFIG...")
+COVID_CONFIG = ExperimentConfig(
+    train_seasons=['2019-20', '2020-21'],
+    val_season='2021-22',
+    test_season='2022-23'
+)
+print("COVID_CONFIG created, id:", id(COVID_CONFIG))
+print("COVID_CONFIG dict:", COVID_CONFIG.__dict__)
+
+# 训练配置
+TRAINING_CONFIG = {
+    'num_episodes': 1000,
+    'batch_size': 32,
+    'learning_rate': 0.001,
+    'epsilon_start': 1.0,
+    'epsilon_end': 0.01,
+    'epsilon_decay': 0.995,
+    'gamma': 0.99,
+    'tau': 0.001,
+    'update_every': 4,
+    'buffer_size': int(1e5),
+    'min_buffer_size': 1000,
+    'gradient_clip': 1.0
 }
 
-# 特征配置
-PLAYER_FEATURES = [
-    'recent_points_mean',
-    'recent_points_std',
-    'form',
-    'fixture_difficulty',
-    'price_value',
-    'team_strength',
-    'position_scarcity',
-    'value',
-    'total_points',
-    'is_home',
-    'opponent_defense_strength'
-]
-
-# 位置要求
-FORMATION_REQUIREMENTS = {
-    'GK': 2,
-    'DEF': 5,
-    'MID': 5,
-    'FWD': 3
+# 模型配置
+MODEL_CONFIG = {
+    'input_dim': 12,
+    'hidden_dim': 128,
+    'num_heads': 4,
+    'num_layers': 2,
+    'dropout': 0.1,
+    'activation': 'relu'
 }
 
-# 保存和日志
-SAVE_INTERVAL = 100       # 模型保存间隔
-LOG_INTERVAL = 10         # 日志打印间隔
-EVALUATE_INTERVAL = 50    # 评估间隔
-
-# 设备配置
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+# 环境配置
+ENV_CONFIG = {
+    'budget': 100.0,
+    'max_players': 15,
+    'max_per_team': 3,
+    'position_limits': {
+        'GK': 2,
+        'DEF': 5,
+        'MID': 5,
+        'FWD': 3
+    }
+}

@@ -8,10 +8,14 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
+import random
+from torch import optim
+from dataclasses import dataclass, field
+from typing import List, Dict, Any
 
+from config import ExperimentConfig, PROJECT_ROOT
 from environment import FPLEnv
 from models import DynamicSpatioTemporalMetaLearner
-from config import *
 from utils.visualization import VisualizationTool, ResultAnalyzer
 from utils.statistical_analysis import StatisticalAnalyzer
 from models.generalization import evaluate_generalization
@@ -22,28 +26,84 @@ from models.dst_meta_grl import DynamicSpatioTemporalMetaLearner
 
 class ExperimentRunner:
     """实验运行器"""
-    def __init__(self, config: ExperimentConfig = None):
-        self.config = config or DEFAULT_CONFIG
-        self.save_dir = os.path.join(PROJECT_ROOT, "experiments")
-        os.makedirs(self.save_dir, exist_ok=True)
+    def __init__(self, config: ExperimentConfig):
+        """
+        初始化实验运行器
+        Args:
+            config: 实验配置
+        """
+        print("\nDEBUG: ExperimentRunner init...")
+        print(f"Config type: {type(config)}")
+        print(f"Config dict: {config.__dict__}")
+        
+        self.config = config
         
         # 设置随机种子
-        torch.manual_seed(self.config.random_seed)
-        np.random.seed(self.config.random_seed)
+        torch.manual_seed(config.random_seed)
+        np.random.seed(config.random_seed)
+        random.seed(config.random_seed)
         
-        # 初始化环境和模型
-        self.env = FPLEnv(season=self.config.train_seasons[0])
+        # 检查数据路径
+        print("\nDEBUG: Checking data_path...")
+        base_data_path = os.path.join(os.getcwd(), '..', 'data')
+        print(f"Base data path: {base_data_path}")
+        
+        # 使用第一个训练赛季作为初始环境
+        first_season = config.train_seasons[0]
+        data_path = os.path.join(base_data_path, first_season)
+        print(f"Full data path: {data_path}")
+        
+        # 创建环境
+        print("\nDEBUG: Creating environment...")
+        self.env = FPLEnv(
+            data_path=data_path,
+            budget=100.0,
+            max_players=15
+        )
+        
+        # 创建模型
+        state = self.env.reset()[0]  # 获取初始状态来确定输入维度
+        input_dim = (
+            state['player_features'].shape[1] +  # 球员特征
+            state['position_onehot'].shape[1] +  # 位置独热编码
+            state['team_onehot'].shape[1]  # 球队独热编码
+        )
+        
+        print(f"\nDEBUG: Creating model...")
+        print(f"Input dimension: {input_dim}")
+        print(f"Model config: {config.model}")
+        
+        # 使用动态输入维度
+        model_config = config.model
+        model_config.input_dim = input_dim
+        
         self.model = DynamicSpatioTemporalMetaLearner(
-            input_dim=self.config.model.input_dim,
-            hidden_dim=self.config.model.hidden_dim
-        ).to(self.config.device)
+            input_dim=model_config.input_dim,
+            hidden_dim=model_config.hidden_dim
+        ).to(config.device)
+        
+        # 创建优化器
+        self.optimizer = optim.Adam(
+            self.model.parameters(),
+            lr=config.training.learning_rate
+        )
+        
+        # 记录最佳性能
+        self.best_reward = float('-inf')
+        self.best_model_path = os.path.join(
+            config.output_path,
+            'best_model.pth'
+        )
+        
+        # 创建输出目录
+        os.makedirs(config.output_path, exist_ok=True)
         
         # 初始化结果存储
         self.results = defaultdict(dict)
         self.results['runs'] = []  # 添加runs列表来存储多次运行的结果
         
         # 添加可视化和分析工具
-        self.visualizer = VisualizationTool(self.save_dir)
+        self.visualizer = VisualizationTool(config.output_path)
         self.analyzer = ResultAnalyzer()
         self.statistical_analyzer = StatisticalAnalyzer()
     
@@ -89,7 +149,7 @@ class ExperimentRunner:
     
     def _save_results(self):
         """保存实验结果"""
-        save_path = os.path.join(self.save_dir, 'experiment_results.pkl')
+        save_path = os.path.join(self.config.output_path, 'experiment_results.pkl')
         torch.save(self.results, save_path)
         print(f"\nSaved results to {save_path}")
     
@@ -114,7 +174,7 @@ class ExperimentRunner:
     
     def _save_config(self):
         """保存实验配置"""
-        config_path = os.path.join(self.save_dir, 'experiment_config.json')
+        config_path = os.path.join(self.config.output_path, 'experiment_config.json')
         with open(config_path, 'w') as f:
             json.dump(self.config.to_dict(), f, indent=4)
     
@@ -135,7 +195,6 @@ class ExperimentRunner:
     def _train_model(self):
         """训练模型"""
         print("\nTraining model...")
-        optimizer = torch.optim.Adam(self.model.parameters())
         
         for episode in tqdm(range(self.config.training.num_episodes)):
             # 随机选择一个训练赛季
@@ -152,9 +211,9 @@ class ExperimentRunner:
             self.model.train()
             loss_dict = self.model.compute_loss(episode_data, season_info)
             
-            optimizer.zero_grad()
+            self.optimizer.zero_grad()
             loss_dict['total_loss'].backward()
-            optimizer.step()
+            self.optimizer.step()
             
             # 记录结果
             if episode % self.config.log_interval == 0:
@@ -208,17 +267,28 @@ class ExperimentRunner:
         ], device=self.config.device)
     
     def _collect_episode_data(self, season_info):
-        """收集单个episode的训练数据"""
+        """收集单个回合的数据"""
         episode_data = []
         state, _ = self.env.reset()
         done = False
         
         while not done:
             # 选择动作
-            action = self.model.select_action(
-                state,
-                epsilon=self._get_epsilon(len(episode_data))
-            )
+            action_info = self.model.select_action(state)
+            action = action_info['action']  # [batch_size, num_players]
+            
+            # 确保动作是布尔张量
+            action = action.bool()
+            
+            # 如果是批处理，只取第一个
+            if action.dim() > 1 and action.size(0) > 1:
+                action = action[0]
+            
+            # 打印调试信息
+            print(f"\nEpisode data collection:")
+            print(f"state shape: {state['values'].shape}")
+            print(f"action shape: {action.shape}")
+            print(f"Selected players: {action.sum().item()}")
             
             # 执行动作
             next_state, reward, done, _, _ = self.env.step(action)
@@ -227,7 +297,10 @@ class ExperimentRunner:
             episode_data.append({
                 'state': state,
                 'action': action,
+                'log_prob': action_info['log_prob'],
+                'value': action_info['value'],
                 'reward': reward,
+                'violations': action_info['violations'],
                 'next_state': next_state,
                 'done': done,
                 'season_info': season_info
@@ -326,7 +399,7 @@ class ExperimentRunner:
         report = self.statistical_analyzer.generate_statistical_report(analysis_results)
         
         # 4. 保存结果
-        with open(os.path.join(self.save_dir, 'statistical_analysis.txt'), 'w') as f:
+        with open(os.path.join(self.config.output_path, 'statistical_analysis.txt'), 'w') as f:
             f.write(report)
         
         return analysis_results

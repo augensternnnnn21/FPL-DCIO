@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Any
 import torch
+import os
 
 @dataclass
 class TrainingConfig:
@@ -37,31 +38,41 @@ class GeneralizationConfig:
 class ExperimentConfig:
     """实验总配置"""
     # 基础设置
-    device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    random_seed: int = 42
-    num_runs: int = 5  # 每个实验重复次数
+    device: torch.device = field(
+        default_factory=lambda: torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    )
+    random_seed: int = field(default=42)
+    num_runs: int = field(default=5)  # 每个实验重复次数
     
     # 数据配置
-    train_seasons: List[str] = None
-    val_season: str = "2021-22"
-    test_season: str = "2022-23"
+    train_seasons: List[str] = field(
+        default_factory=lambda: ['2016-17', '2017-18', '2018-19', '2019-20', '2020-21']
+    )
+    val_season: str = field(default='2021-22')
+    test_season: str = field(default='2022-23')
+    
+    # 路径配置
+    output_path: str = field(
+        default_factory=lambda: os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
+            'experiments'
+        )
+    )
     
     # 组件配置
-    training: TrainingConfig = TrainingConfig()
-    model: ModelConfig = ModelConfig()
-    generalization: GeneralizationConfig = GeneralizationConfig()
+    training: TrainingConfig = field(default_factory=TrainingConfig)
+    model: ModelConfig = field(default_factory=ModelConfig)
+    generalization: GeneralizationConfig = field(default_factory=GeneralizationConfig)
     
     # 日志配置
-    log_interval: int = 10
-    save_interval: int = 100
-    evaluate_interval: int = 50
+    log_interval: int = field(default=10)
+    save_interval: int = field(default=100)
+    evaluate_interval: int = field(default=50)
     
     def __post_init__(self):
-        if self.train_seasons is None:
-            self.train_seasons = [
-                "2016-17", "2017-18", "2018-19", 
-                "2019-20", "2020-21"
-            ]
+        """初始化后的处理"""
+        # 确保输出目录存在
+        os.makedirs(self.output_path, exist_ok=True)
     
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> 'ExperimentConfig':
@@ -90,14 +101,9 @@ DEFAULT_CONFIG = ExperimentConfig()
 
 # COVID实验配置
 COVID_CONFIG = ExperimentConfig(
-    train_seasons=["2016-17", "2017-18", "2018-19"],
-    val_season="2019-20",  # COVID开始
-    test_season="2020-21",  # COVID期间
-    generalization=GeneralizationConfig(
-        num_test_episodes=20,  # 增加测试轮数
-        perturbation_ratio=0.15,  # 增加扰动强度
-        adaptation_steps=150  # 增加适应步数
-    )
+    train_seasons=['2016-17', '2017-18', '2018-19'],
+    val_season='2019-20',
+    test_season='2020-21'
 )
 
 # 跨赛季泛化配置

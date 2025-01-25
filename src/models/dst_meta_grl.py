@@ -191,47 +191,70 @@ class DynamicSpatioTemporalMetaLearner(nn.Module):
         state_value = self.value_net(pooled_features)  # [batch_size, 1]
         
         # 8. 生成动作概率
-        action_logits = self.action_generator(policy_features)
+        action_logits = self.action_generator(policy_features)  # [batch_size, num_players, max_players]
+        # 确保 logits 在最后一个维度上进行 softmax
         action_probs = F.softmax(action_logits, dim=-1)
         
+        # 打印调试信息
+        print(f"\nAction generation:")
+        print(f"action_logits shape: {action_logits.shape}")
+        print(f"action_probs shape: {action_probs.shape}")
+        
         # 9. 约束处理
+        # 确保状态中的关键字段存在
+        required_fields = ['values', 'position_onehot', 'team_onehot']
+        for field in required_fields:
+            if field not in state:
+                raise ValueError(f"缺少必要的状态字段: {field}")
+            if state[field] is None:
+                raise ValueError(f"状态字段不能为None: {field}")
+        
         constraint_violations = self._handle_constraints(
-            action_probs, state, constraints
+            action_probs, state
         )
+        
+        # 修改这里：正确处理约束违反的 reward 计算
+        total_violation = constraint_violations['total']  # 这是一个张量
+        violation_details = constraint_violations['details']  # 这是一个字典
+        
+        # 打印调试信息
+        print("\nOutput shapes:")
+        print(f"action_probs: {action_probs.shape}")
+        print(f"state_value: {state_value.shape}")
+        print(f"total_violation: {total_violation.shape}")
         
         return {
             'action_probs': action_probs,
             'state_value': state_value,
-            'constraint_violations': constraint_violations,
-            'meta_knowledge': meta_knowledge if meta_knowledge is not None else policy_features,
+            'violations': violation_details,
+            'reward': -total_violation.mean(),  # 使用总违反度的平均值作为奖励
+            'meta_knowledge': features,
             'domain_features': features,
-            'reward': -sum(v.mean() for v in constraint_violations.values())
+            'total_violation': total_violation
         }
     
-    def _handle_constraints(self, action_probs, state, constraints=None):
-        """处理约束"""
-        if constraints is not None:
-            # 只检查指定的约束
-            violations = {}
-            for constraint in constraints:
-                if constraint == 'budget':
-                    violation = self.constraint_checker.check_budget_constraint(
-                        action_probs * state['values']
-                    )
-                    violations['budget'] = violation
-                elif constraint == 'position':
-                    violation = self.constraint_checker.check_position_constraint(
-                        action_probs * state['position_onehot'],
-                        torch.tensor([2, 5, 5, 3], device=action_probs.device)
-                    )
-                    violations['position'] = violation
-                # ... 其他约束检查
-        else:
-            # 检查所有约束
-            violations = self.constraint_checker(
-                action_probs,
-                state
-            )
+    def _handle_constraints(self, selections, state):
+        """处理约束检查"""
+        # 只传递非 None 的状态值
+        constraint_state = {}
+        for key in ['values', 'position_onehot', 'team_onehot', 'points', 'history', 'features']:
+            if key in state and state[key] is not None:
+                constraint_state[key] = state[key]
+        
+        # 打印调试信息
+        print("\nState keys available for constraints:")
+        print(list(constraint_state.keys()))
+        
+        violations = self.constraint_checker(
+            selections,
+            constraint_state
+        )
+        
+        # 打印调试信息
+        print("\nConstraint violations:")
+        for key, value in violations['details'].items():
+            print(f"{key}: {value.shape}, mean: {value.mean().item():.4f}")
+        print(f"Total violation: {violations['total'].mean().item():.4f}")
         
         return violations
     
@@ -271,10 +294,7 @@ class DynamicSpatioTemporalMetaLearner(nn.Module):
             domain_loss = 0
         
         # 3. 约束违反损失
-        constraint_loss = sum(
-            violation.mean()
-            for violation in output['constraint_violations'].values()
-        )
+        constraint_loss = output['total_violation'].mean()
         
         # 总损失
         total_loss = (
@@ -292,28 +312,62 @@ class DynamicSpatioTemporalMetaLearner(nn.Module):
             'constraint_loss': constraint_loss
         }
     
-    def select_action(self, state, epsilon=0.0):
+    def select_action(self, state):
         """选择动作"""
         with torch.no_grad():
             output = self.forward(state)
-            action_probs = output['action_probs']
+            action_probs = output['action_probs']  # [batch_size, num_players, max_players]
             
-            if torch.rand(1) < epsilon:
-                # 探索：随机选择
-                action = torch.multinomial(
-                    action_probs,
-                    num_samples=15,  # 需要选择15名球员
-                    replacement=False
-                )
-            else:
-                # 利用：选择概率最高的动作
-                _, action = torch.topk(
-                    action_probs,
-                    k=15,
-                    dim=-1
-                )
+            # 打印调试信息
+            print("\nAction selection:")
+            print(f"action_probs shape: {action_probs.shape}")
             
-            return action
+            # 确保维度正确
+            if action_probs.dim() == 3:
+                batch_size, num_players, max_players = action_probs.shape
+                # 只取第一个批次
+                action_probs = action_probs[0]  # [num_players, max_players]
+            
+            # 确保概率和为1
+            action_probs = F.normalize(action_probs, p=1, dim=-1)
+            
+            # 打印调试信息
+            print(f"Normalized action_probs shape: {action_probs.shape}")
+            print(f"Probability sum: {action_probs.sum(dim=-1).mean().item():.4f}")
+            
+            try:
+                # 选择固定数量的球员（15名）
+                num_players_to_select = 15
+                
+                # 创建一维布尔张量
+                action = torch.zeros(num_players, dtype=torch.bool, device=action_probs.device)
+                
+                # 选择概率最高的15个位置
+                _, indices = torch.topk(action_probs.mean(dim=1), k=num_players_to_select)
+                action[indices] = True
+                
+                # 打印调试信息
+                print(f"Selected action shape: {action.shape}")
+                print(f"Number of selected players: {action.sum().item()}")
+                
+                # 验证选择的球员数量
+                assert action.sum() == num_players_to_select, \
+                    f"选择的球员数量错误：{action.sum().item()} vs {num_players_to_select}"
+                
+            except RuntimeError as e:
+                print(f"Error in action selection: {e}")
+                print(f"action_probs stats: min={action_probs.min().item():.4f}, "
+                      f"max={action_probs.max().item():.4f}, "
+                      f"mean={action_probs.mean().item():.4f}")
+                raise
+            
+            return {
+                'action': action,  # 返回一维布尔张量
+                'log_prob': torch.log(action_probs + 1e-10).mean(dim=1),  # [num_players]
+                'value': output['state_value'],
+                'reward': output['reward'],
+                'violations': output['violations']
+            }
     
     def _build_position_adj_matrix(self, position_onehot):
         """构建基于位置的邻接矩阵"""
