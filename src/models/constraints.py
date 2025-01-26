@@ -1,119 +1,70 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+import pandas as pd
+from typing import Dict, Union
+from .base_constraints import BaseConstraintChecker
 
-class DifferentiableChecker(nn.Module):
-    """可微分约束检查器"""
-    def __init__(self, budget_limit=100.0, max_players=600):
-        super().__init__()
-        self.budget_limit = budget_limit
-        self.max_players = max_players
-        
-        # 约束权重学习器
-        self.constraint_weights = nn.Parameter(torch.ones(4))
-        
-        # 约束违反惩罚因子
-        self.penalty_factors = {
-            'budget': 2.0,
-            'position': 1.5,
-            'team': 1.0,
-            'value': 0.5
-        }
+class ConstraintChecker(BaseConstraintChecker):
+    """基本约束检查器，用于非神经网络的约束检查"""
     
-    def _pad_tensor(self, tensor, target_size):
-        """将张量填充到目标大小（处理1D、2D和3D张量）"""
-        # 确保张量至少是2维的
-        if tensor.dim() == 1:
-            tensor = tensor.unsqueeze(0)  # [num_players] -> [1, num_players]
+    def check_constraints(self, 
+                        selected_players: pd.DataFrame,
+                        budget: float,
+                        max_players: int) -> float:
+        """检查所有约束并返回奖励"""
+        reward = 0.0
         
-        if tensor.dim() == 2:
-            # 如果是独热编码，保持特征维度不变
-            if tensor.size(-1) in [4, 20]:  # 位置(4)或球队(20)独热编码
-                # [num_players, features] -> [1, num_players, features]
-                tensor = tensor.unsqueeze(0)
-                padded = torch.zeros(1, target_size, tensor.size(-1), device=tensor.device)
-                padded[0, :tensor.size(1), :] = tensor
-                return padded
-            else:
-                # 其他2D张量的填充
-                if tensor.size(1) < target_size:
-                    padding = (0, target_size - tensor.size(1))
-                    return F.pad(tensor, padding, mode='constant', value=0)
-                return tensor[:, :target_size]
+        # 1. 检查位置约束
+        position_penalty = self._check_position_constraints(selected_players)
+        reward -= position_penalty
         
-        elif tensor.dim() == 3:
-            if tensor.size(1) < target_size:
-                padded = torch.zeros(tensor.size(0), target_size, tensor.size(2), device=tensor.device)
-                padded[:, :tensor.size(1), :] = tensor
-                return padded
-            return tensor[:, :target_size, :]
+        # 2. 检查球队约束
+        team_penalty = self._check_team_constraints(selected_players)
+        reward -= team_penalty
         
-        return tensor
+        # 3. 检查预算约束
+        budget_penalty = self._check_budget_constraints(selected_players, budget)
+        reward -= budget_penalty
+        
+        # 4. 检查总人数约束
+        count_penalty = self._check_count_constraints(selected_players, max_players)
+        reward -= count_penalty
+        
+        # 5. 添加得分奖励
+        points_reward = selected_players['total_points'].sum()
+        reward += points_reward
+        
+        return reward
     
-    def check_budget_constraint(self, selected_values):
-        """检查预算约束"""
-        total_cost = selected_values.sum(dim=1)  # [batch_size]
-        violation = F.relu(total_cost - self.budget_limit)
-        return violation * self.penalty_factors['budget']
+    def get_reward(self, violations: Dict[str, float]) -> float:
+        return -sum(violations.values())
     
-    def check_position_constraint(self, selected_positions, required_counts):
+    def _check_position_constraints(self, players: pd.DataFrame) -> float:
         """检查位置约束"""
-        # [batch_size, num_players, 4] -> [batch_size, 4]
-        position_counts = selected_positions.sum(dim=1)
-        violations = F.relu(torch.abs(position_counts - required_counts))
-        return violations.mean(dim=1) * self.penalty_factors['position']
+        penalty = 0.0
+        position_counts = players['position'].value_counts()
+        
+        for pos, required in self.position_limits.items():
+            actual = position_counts.get(pos, 0)
+            if actual != required:
+                penalty += 100 * abs(actual - required)
+        
+        return penalty
     
-    def check_team_constraint(self, selected_teams, max_per_team=3):
+    def _check_team_constraints(self, players: pd.DataFrame) -> float:
         """检查球队约束"""
-        # [batch_size, num_players, 20] -> [batch_size, 20]
-        team_counts = selected_teams.sum(dim=1)
-        violations = F.relu(team_counts - max_per_team)
-        return violations.mean(dim=1) * self.penalty_factors['team']
+        team_counts = players['team'].value_counts()
+        if team_counts.max() > self.max_per_team:
+            return 100 * (team_counts.max() - self.max_per_team)
+        return 0.0
     
-    def check_value_constraint(self, selected_values, selected_points):
-        """检查价值效率约束"""
-        # [batch_size]
-        value_efficiency = selected_points.sum(dim=1) / (selected_values.sum(dim=1) + 1e-6)
-        violation = F.relu(0.5 - value_efficiency)
-        return violation * self.penalty_factors['value']
+    def _check_budget_constraints(self, players: pd.DataFrame, budget: float) -> float:
+        """检查预算约束"""
+        total_value = players['value'].sum()
+        if total_value > budget:
+            return 100 * (total_value - budget)
+        return 0.0
     
-    def forward(self, state):
-        """
-        检查约束违反情况
-        Args:
-            state: 包含以下键的字典：
-                - selections: [num_players, 1] 选择的球员
-                - values: [num_players] 球员价值
-                - position_onehot: [num_players, num_positions] 位置独热编码
-                - team_onehot: [num_players, num_teams] 球队独热编码
-                - player_features: [num_players, feature_dim] 球员特征
-        """
-        selections = state['selections']
-        values = state['values']
-        position_onehot = state['position_onehot']
-        team_onehot = state['team_onehot']
-        
-        # 1. 预算约束
-        total_value = torch.sum(selections * values.unsqueeze(-1))
-        budget_violation = F.relu(total_value - 100.0)
-        
-        # 2. 位置约束
-        position_counts = torch.sum(selections * position_onehot, dim=0)
-        required_counts = torch.tensor([2, 5, 5, 3], device=selections.device)  # GK, DEF, MID, FWD
-        position_violation = torch.sum(torch.abs(position_counts - required_counts))
-        
-        # 3. 球队约束
-        team_counts = torch.sum(selections * team_onehot, dim=0)
-        team_violation = F.relu(torch.max(team_counts) - 3.0)
-        
-        # 4. 总球员数约束
-        total_players = torch.sum(selections)
-        player_count_violation = torch.abs(total_players - 15.0)
-        
-        return {
-            'budget': budget_violation,
-            'position': position_violation,
-            'team': team_violation,
-            'total_players': player_count_violation,
-            'total': budget_violation + position_violation + team_violation + player_count_violation
-        } 
+    def _check_count_constraints(self, players: pd.DataFrame, max_players: int) -> float:
+        """检查总人数约束"""
+        if len(players) != max_players:
+            return 100 * abs(len(players) - max_players)
+        return 0.0

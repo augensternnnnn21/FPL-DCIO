@@ -7,37 +7,47 @@ from config import PROCESSED_DATA_PATH, BUDGET, NUM_PLAYERS
 import pandas as pd
 import torch
 from collections import defaultdict
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, Optional
 from preprocess import preprocess_data
+from pathlib import Path
+
+from data.data_loader import FPLDataLoader
+from data.preprocessor import FPLPreprocessor
+from models.constraints import DifferentiableChecker
 
 class FPLEnv(gym.Env):
-    def __init__(self, data_path: str, budget: float = 100.0, max_players: int = 15, history_length: int = 5):
+    """FPL环境"""
+    def __init__(self, data_path: str, budget: float = 100.0, max_players: int = 15):
         """
         初始化FPL环境
         Args:
             data_path: 数据路径
             budget: 预算限制
             max_players: 最大球员数量
-            history_length: 历史数据长度
         """
         super().__init__()
         
-        # 保存参数
-        self.data_path = data_path
-        self.budget = budget
-        self.max_players = max_players
-        self.history_length = history_length
+        # 初始化组件
+        self.data_loader = FPLDataLoader(data_path)
+        self.preprocessor = FPLPreprocessor()
+        self.constraint_checker = DifferentiableChecker(budget, max_players)
         
         # 加载和预处理数据
         try:
-            self.data = preprocess_data(self.data_path)
+            raw_data = self.data_loader.load_data()
+            team_list = self.data_loader.load_team_list()
+            self.data = self.preprocessor.preprocess(raw_data, team_list)
             self.all_players = self.data['name'].unique()
-            print(f"Total unique players: {len(self.all_players)}")
+            print(f"加载了 {len(self.all_players)} 名球员")
         except Exception as e:
-            print(f"Error loading data: {str(e)}")
+            print(f"数据加载错误: {str(e)}")
             raise
         
-        # 初始化状态空间
+        # 保存参数
+        self.budget = budget
+        self.max_players = max_players
+        
+        # 初始化空间
         self._init_spaces()
         
         # 重置环境
@@ -45,105 +55,88 @@ class FPLEnv(gym.Env):
     
     def _init_spaces(self):
         """初始化动作和观察空间"""
-        # 状态空间：每个球员的特征向量
-        num_features = 12  # 根据实际特征数量调整
+        num_features = 12  # 基本特征数量
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
             shape=(len(self.all_players), num_features),
             dtype=np.float32
         )
-        
-        # 动作空间：选择或不选择每个球员
         self.action_space = spaces.MultiBinary(len(self.all_players))
     
-    def reset(self, season=None):
-        """重置环境状态
+    def reset(self, season: Optional[str] = None) -> Dict:
+        """重置环境"""
+        if season:
+            try:
+                raw_data = self.data_loader.load_data(season)
+                team_list = self.data_loader.load_team_list()
+                self.data = self.preprocessor.preprocess(raw_data, team_list)
+            except Exception as e:
+                print(f"加载赛季数据错误: {str(e)}")
+                raise
         
-        Args:
-            season: 可选的赛季参数，如果提供则使用指定赛季的数据
-        
-        Returns:
-            初始状态
-        """
-        if season is not None:
-            self.current_season = season
-            # 重新加载数据
-            self._load_data()
-        
-        # 重置其他状态
         self.current_gameweek = 1
         self.selected_players = []
         self.available_budget = self.budget
-        self.history = []
         
-        # 获取初始状态
         return self._get_state()
     
-    def step(self, action):
-        """执行一步动作"""
-        # 获取当前比赛周的数据
-        current_players = self._get_available_players()
-        
-        # 如果action是张量，转换为numpy数组
+    def step(self, action: np.ndarray) -> Tuple[Dict, float, bool, Dict]:
+        """执行一步"""
         if isinstance(action, torch.Tensor):
             action = action.cpu().numpy()
         
-        # 确保action的长度与当前可用球员数量相同
-        if len(action) > len(current_players):
-            action = action[:len(current_players)]
-        
         # 获取选中的球员
         selected_indices = np.where(action)[0]
-        selected_players = current_players.iloc[selected_indices]
+        selected_players = self.data.iloc[selected_indices]
         
-        # 计算实际奖励（使用总分）
-        total_points = selected_players['total_points'].sum()
-        reward = float(total_points) if isinstance(total_points, (int, float)) else 0.0
+        # 构建状态字典
+        state = {
+            'selections': torch.from_numpy(action).float(),
+            'values': torch.from_numpy(selected_players['value'].values).float(),
+            'position_onehot': self._get_position_onehot(selected_players),
+            'team_onehot': self._get_team_onehot(selected_players)
+        }
         
-        # 添加约束惩罚
-        position_counts = selected_players['position'].value_counts()
-        team_counts = selected_players['team'].value_counts()
+        # 检查约束
+        violations = self.constraint_checker(state)
+        reward = -violations['total'].item()
         
-        # 1. 位置约束
-        required_counts = {'GK': 2, 'DEF': 5, 'MID': 5, 'FWD': 3}
-        for pos, required in required_counts.items():
-            actual = position_counts.get(pos, 0)
-            if actual != required:
-                reward -= 100 * abs(actual - required)  # 增加惩罚力度
-        
-        # 2. 球队约束
-        if team_counts.max() > 3:
-            reward -= 100 * (team_counts.max() - 3)  # 增加惩罚力度
-        
-        # 3. 总人数约束
-        if len(selected_players) != 15:
-            reward -= 100 * abs(len(selected_players) - 15)  # 增加惩罚力度
-        
-        # 更新比赛周
+        # 更新状态
         self.current_gameweek += 1
         done = self.current_gameweek > 38
         
-        # 准备下一个状态
-        next_state = self._get_state() if not done else None
+        return self._get_state(), reward, done, violations
+    
+    def _get_state(self) -> Dict:
+        """获取当前状态"""
+        current_data = self.data[self.data['gw'] == self.current_gameweek]
         
-        # 打印调试信息
-        print(f"\nStep Info:")
-        print(f"Gameweek: {self.current_gameweek}")
-        print(f"Available players: {len(current_players)}")
-        print(f"Selected players: {len(selected_players)}")
-        print(f"Total points: {reward}")
-        print(f"Position distribution: {dict(position_counts)}")
-        print(f"Team distribution: {dict(team_counts)}")
+        # 构建特征矩阵
+        features = current_data[['value', 'total_points', 'minutes', 'goals_scored',
+                               'assists', 'clean_sheets', 'goals_conceded']].values
         
-        return next_state, reward, done, {
-            'selected_players': selected_players,
-            'total_points': reward,
-            'position_counts': position_counts,
-            'team_counts': team_counts,
-            'available_players': len(current_players),
-            'selected_count': len(selected_players)
+        # 添加位置和球队的独热编码
+        position_onehot = self._get_position_onehot(current_data)
+        team_onehot = self._get_team_onehot(current_data)
+        
+        return {
+            'features': torch.from_numpy(features).float(),
+            'position_onehot': position_onehot,
+            'team_onehot': team_onehot,
+            'gameweek': self.current_gameweek
         }
+    
+    def _get_position_onehot(self, data: pd.DataFrame) -> torch.Tensor:
+        """获取位置的独热编码"""
+        positions = ['GK', 'DEF', 'MID', 'FWD']
+        position_onehot = pd.get_dummies(data['position'])[positions].values
+        return torch.from_numpy(position_onehot).float()
+    
+    def _get_team_onehot(self, data: pd.DataFrame) -> torch.Tensor:
+        """获取球队的独热编码"""
+        team_onehot = pd.get_dummies(data['team']).values
+        return torch.from_numpy(team_onehot).float()
 
     def _add_team_info(self):
         """添加球队信息"""
