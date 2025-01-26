@@ -41,7 +41,7 @@ class ExperimentRunner:
         
         # 基础配置
         self.config = config
-        self.base_data_path = os.path.join(PROJECT_ROOT, 'data')
+        self.base_data_path = config.data_path  # 使用配置中的data_path
         print(f"Base data path: {self.base_data_path}")
         
         # 确保输出目录存在
@@ -68,11 +68,17 @@ class ExperimentRunner:
         print(f"File exists: {os.path.exists(data_path)}")
         
         try:
-            self.env = FPLEnv(
-                data_path=data_path,
+            # 创建临时配置对象
+            env_config = ExperimentConfig(
+                data_path=str(data_path),
                 budget=BUDGET,
                 max_players=NUM_PLAYERS
             )
+            print("\nDEBUG: 环境配置对象结构:")
+            print(f"类型: {type(env_config)}")
+            print(f"包含data_path字段: {'data_path' in env_config.__dict__}")
+            print(f"完整配置: {env_config.__dict__}")
+            self.env = FPLEnv(env_config)
         except Exception as e:
             print(f"Failed to create environment: {str(e)}")
             raise
@@ -221,12 +227,17 @@ class ExperimentRunner:
             self.current_season = np.random.choice(self.config.train_seasons)
             data_path = os.path.join(self.base_data_path, self.current_season, f"{self.current_season}_processed.csv")
             
-            # 重置环境到新的赛季
-            self.env = FPLEnv(
-                data_path=data_path,
+            # 创建符合FPLEnv要求的配置对象
+            env_config = ExperimentConfig(
+                data_path=str(data_path),
                 budget=BUDGET,
                 max_players=NUM_PLAYERS
             )
+            print("\nDEBUG: 环境配置对象结构:")
+            print(f"类型: {type(env_config)}")
+            print(f"包含data_path字段: {'data_path' in env_config.__dict__}")
+            print(f"完整配置: {env_config.__dict__}")
+            self.env = FPLEnv(env_config)
             
             # 收集经验数据
             episode_data = self._collect_episode_data(self.current_season)

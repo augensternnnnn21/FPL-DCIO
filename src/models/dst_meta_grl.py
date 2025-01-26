@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .relation_net import RelationNet
 from .st_conv import STConv
 from .meta_learning import MetaDistiller, CurriculumScheduler, GradientAggregator
-from .constraints import DifferentiableChecker
+from .differentiable_constraints import DifferentiableChecker
 import numpy as np
 
 class DynamicSpatioTemporalMetaLearner(nn.Module):

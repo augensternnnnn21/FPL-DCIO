@@ -2,6 +2,7 @@ import os
 import torch
 from dataclasses import dataclass, field, fields
 from typing import List, Dict, Any
+import warnings
 
 # 项目根目录
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -52,52 +53,41 @@ class GeneralizationConfig:
 
 @dataclass
 class ExperimentConfig:
-    """实验配置"""
-    # 设备配置
-    device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    """实验配置参数（最终确认版）"""
+    data_path: str  # 必须作为第一个参数
+    budget: float = 100.0
+    max_players: int = 15
+    num_episodes: int = 1000
+    learning_rate: float = 0.001
+    gamma: float = 0.99
     
-    # 随机种子
+    # 环境相关参数
+    output_path: str = field(
+        default_factory=lambda: os.path.join(PROJECT_ROOT, 'experiments')
+    )
+    device: torch.device = field(
+        default_factory=lambda: torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    )
     random_seed: int = 42
     
-    # 实验运行次数
-    num_runs: int = 5
-    
-    # 数据配置
+    # 数据分割参数
     train_seasons: List[str] = field(default_factory=lambda: [
-        '2016-17', '2017-18', '2018-19', '2019-20', '2020-21'
+        '2016-17', '2017-18', '2018-19'
     ])
-    val_season: str = '2021-22'
-    test_season: str = '2022-23'
-    
-    # 路径配置
-    output_path: str = field(
-        default_factory=lambda: os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'experiments')
-    )
-    
-    # 训练配置
-    training: TrainingConfig = field(default_factory=TrainingConfig)
-    
-    # 模型配置
-    model: ModelConfig = field(default_factory=ModelConfig)
-    
-    # 泛化配置
-    generalization: GeneralizationConfig = field(default_factory=GeneralizationConfig)
-    
-    # 日志配置
-    log_interval: int = 10
-    save_interval: int = 100
-    evaluate_interval: int = 50
+    val_season: str = '2019-20'
+    test_season: str = '2020-21'
     
     def __post_init__(self):
-        """初始化后的处理"""
-        print("\nDEBUG: ExperimentConfig post_init")
-        print(f"self.__dict__: {self.__dict__}")
-        # 确保输出目录存在
-        os.makedirs(self.output_path, exist_ok=True)
+        print(f"\nDEBUG: ExperimentConfig实例化参数:")
+        print(f"data_path类型: {type(self.data_path)}")
+        print(f"data_path值: {self.data_path}")
+        print(f"所有字段: {self.__dict__}")
 
 def get_default_config() -> ExperimentConfig:
     """获取默认配置"""
-    return ExperimentConfig()
+    return ExperimentConfig(
+        data_path=os.path.join(PROJECT_ROOT, 'data')  # 添加默认数据路径
+    )
 
 # 为了保持向后兼容
 DEFAULT_CONFIG = get_default_config()
@@ -105,6 +95,7 @@ DEFAULT_CONFIG = get_default_config()
 # 创建 COVID 配置
 print("\nDEBUG: Creating COVID_CONFIG...")
 COVID_CONFIG = ExperimentConfig(
+    data_path=os.path.join(PROJECT_ROOT, 'data'),  # 添加data_path
     train_seasons=['2019-20', '2020-21'],
     val_season='2021-22',
     test_season='2022-23'

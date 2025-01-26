@@ -6,8 +6,22 @@ from pathlib import Path
 class FPLDataLoader:
     """FPL数据加载器"""
     def __init__(self, base_path: str):
+        # 增强路径验证逻辑
+        if os.path.isfile(base_path):
+            base_path = os.path.dirname(base_path)
+            
+        if not os.path.isdir(base_path):
+            raise NotADirectoryError(f"路径不是有效目录: {base_path}")
+            
         self.base_path = Path(base_path)
         self.merged_data_path = self.base_path / 'cleaned_merged_seasons.csv'
+        
+        # 修正目录创建逻辑
+        try:
+            self.base_path.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            raise RuntimeError(f"无法创建数据目录: {self.base_path}") from e
+        
         self.master_team_path = self.base_path / 'master_team_list.csv'
     
     def load_data(self, season: Optional[str] = None) -> pd.DataFrame:
@@ -21,11 +35,25 @@ class FPLDataLoader:
         else:
             return self._load_merged_data()
     
-    def _load_merged_data(self) -> pd.DataFrame:
-        """加载合并的赛季数据"""
-        if not self.merged_data_path.exists():
-            raise FileNotFoundError(f"找不到合并数据文件: {self.merged_data_path}")
-        return pd.read_csv(self.merged_data_path)
+    def _load_merged_data(self):
+        # 修复路径拼接逻辑
+        season_dir = os.path.dirname(self.merged_data_path)
+        merged_file = os.path.join(season_dir, "cleaned_merged_seasons.csv")
+        
+        if not os.path.exists(merged_file):
+            # 添加详细的错误信息
+            available_files = "\n".join(os.listdir(season_dir))
+            raise FileNotFoundError(
+                f"合并数据文件不存在于: {merged_file}\n"
+                f"当前目录可用文件:\n{available_files}"
+            )
+        
+        # 添加性能优化
+        return pd.read_csv(
+            merged_file,
+            parse_dates=['kickoff_time'],
+            dtype={'team_h_score': 'Int8', 'team_a_score': 'Int8'}
+        )
     
     def _load_season_data(self, season_path: Path) -> pd.DataFrame:
         """加载单个赛季的数据"""

@@ -1,42 +1,46 @@
 import os
 import gymnasium as gym
 import numpy as np
-import pickle
-from gymnasium import spaces
-from config import PROCESSED_DATA_PATH, BUDGET, NUM_PLAYERS
-import pandas as pd
 import torch
-from collections import defaultdict
+from gymnasium import spaces
+import pandas as pd
 from typing import Tuple, Dict, Any, Optional
-from preprocess import preprocess_data
 from pathlib import Path
+from config import ExperimentConfig
 
 from data.data_loader import FPLDataLoader
 from data.preprocessor import FPLPreprocessor
-from models.constraints import DifferentiableChecker
+from models.differentiable_constraints import DifferentiableChecker
 
 class FPLEnv(gym.Env):
     """FPL环境"""
-    def __init__(self, data_path: str, budget: float = 100.0, max_players: int = 15):
-        """
-        初始化FPL环境
-        Args:
-            data_path: 数据路径
-            budget: 预算限制
-            max_players: 最大球员数量
-        """
+    def __init__(self, config: ExperimentConfig):
         super().__init__()
         
+        # 使用config中的参数
+        self.data_loader = FPLDataLoader(config.data_path)
+        self.budget = config.budget
+        self.max_players = config.max_players
+        
+        # 添加路径规范化
+        data_path = Path(config.data_path).resolve()
+        
+        # 验证数据文件存在性
+        if not data_path.exists():
+            raise FileNotFoundError(f"基础数据路径不存在: {data_path}")
+            
+        self.team_data = self._load_team_data()
+        
         # 初始化组件
-        self.data_loader = FPLDataLoader(data_path)
         self.preprocessor = FPLPreprocessor()
-        self.constraint_checker = DifferentiableChecker(budget, max_players)
+        self.constraint_checker = DifferentiableChecker(config.budget, config.max_players)
         
         # 加载和预处理数据
         try:
             raw_data = self.data_loader.load_data()
             team_list = self.data_loader.load_team_list()
             self.data = self.preprocessor.preprocess(raw_data, team_list)
+            self._validate_data()  # 验证数据
             self.all_players = self.data['name'].unique()
             print(f"加载了 {len(self.all_players)} 名球员")
         except Exception as e:
@@ -44,14 +48,21 @@ class FPLEnv(gym.Env):
             raise
         
         # 保存参数
-        self.budget = budget
-        self.max_players = max_players
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         # 初始化空间
         self._init_spaces()
         
         # 重置环境
         self.reset()
+    
+    def _validate_data(self):
+        """验证数据完整性"""
+        required_columns = ['value', 'total_points', 'minutes', 'goals_scored',
+                          'assists', 'clean_sheets', 'goals_conceded', 'position', 'team']
+        missing_cols = [col for col in required_columns if col not in self.data.columns]
+        if missing_cols:
+            raise ValueError(f"缺少必需的列: {missing_cols}")
     
     def _init_spaces(self):
         """初始化动作和观察空间"""
@@ -86,16 +97,18 @@ class FPLEnv(gym.Env):
         if isinstance(action, torch.Tensor):
             action = action.cpu().numpy()
         
+        # 获取当前比赛周的数据
+        current_data = self.data[self.data['gw'] == self.current_gameweek]
+        
         # 获取选中的球员
         selected_indices = np.where(action)[0]
-        selected_players = self.data.iloc[selected_indices]
         
         # 构建状态字典
         state = {
-            'selections': torch.from_numpy(action).float(),
-            'values': torch.from_numpy(selected_players['value'].values).float(),
-            'position_onehot': self._get_position_onehot(selected_players),
-            'team_onehot': self._get_team_onehot(selected_players)
+            'selections': torch.from_numpy(action).float().to(self.device),
+            'values': torch.from_numpy(current_data['value'].values).float().to(self.device),
+            'position_onehot': self._get_position_onehot(current_data).to(self.device),
+            'team_onehot': self._get_team_onehot(current_data).to(self.device)
         }
         
         # 检查约束
@@ -105,6 +118,13 @@ class FPLEnv(gym.Env):
         # 更新状态
         self.current_gameweek += 1
         done = self.current_gameweek > 38
+        
+        # 记录日志
+        if self.current_gameweek % 10 == 0:
+            print(f"\nGameweek: {self.current_gameweek}")
+            print(f"Selected players: {len(selected_indices)}")
+            print(f"Total value: {current_data.iloc[selected_indices]['value'].sum():.2f}")
+            print(f"Reward: {reward:.2f}")
         
         return self._get_state(), reward, done, violations
     
@@ -121,9 +141,9 @@ class FPLEnv(gym.Env):
         team_onehot = self._get_team_onehot(current_data)
         
         return {
-            'features': torch.from_numpy(features).float(),
-            'position_onehot': position_onehot,
-            'team_onehot': team_onehot,
+            'features': torch.from_numpy(features).float().to(self.device),
+            'position_onehot': position_onehot.to(self.device),
+            'team_onehot': team_onehot.to(self.device),
             'gameweek': self.current_gameweek
         }
     
