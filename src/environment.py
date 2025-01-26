@@ -11,25 +11,41 @@ from config import ExperimentConfig
 from data.data_loader import FPLDataLoader
 from data.preprocessor import FPLPreprocessor
 from models.differentiable_constraints import DifferentiableChecker
+from models.st_conv import DilatedTCN
+
 
 class FPLEnv(gym.Env):
     """FPL环境"""
     def __init__(self, config: ExperimentConfig):
         super().__init__()
         
-        # 使用config中的参数
-        self.data_loader = FPLDataLoader(config.data_path)
+        # 直接使用具体的文件路径
+        base_dir = Path("/Users/zhangyufei/Desktop/FPL-DCIO/data")
+        self.seasons_file = base_dir / "cleaned_merged_seasons.csv"
+        self.teams_file = base_dir / "master_team_list.csv"
+        
+        print(f"\n初始化环境")
+        print(f"📄 赛季数据文件: {self.seasons_file}")
+        print(f"📄 球队数据文件: {self.teams_file}")
+        
+        # 验证数据文件
+        self._validate_data_files()
+        
+        try:
+            # 初始化数据加载器并加载数据
+            self.data_loader = FPLDataLoader(
+                seasons_path=self.seasons_file,
+                teams_path=self.teams_file
+            )
+            raw_data = self.data_loader.load_data()
+            self.team_data = self.data_loader.load_team_list()
+            
+        except Exception as e:
+            print(f"❌ 数据加载错误: {str(e)}")
+            raise
+            
         self.budget = config.budget
         self.max_players = config.max_players
-        
-        # 添加路径规范化
-        data_path = Path(config.data_path).resolve()
-        
-        # 验证数据文件存在性
-        if not data_path.exists():
-            raise FileNotFoundError(f"基础数据路径不存在: {data_path}")
-            
-        self.team_data = self._load_team_data()
         
         # 初始化组件
         self.preprocessor = FPLPreprocessor()
@@ -37,14 +53,12 @@ class FPLEnv(gym.Env):
         
         # 加载和预处理数据
         try:
-            raw_data = self.data_loader.load_data()
-            team_list = self.data_loader.load_team_list()
-            self.data = self.preprocessor.preprocess(raw_data, team_list)
-            self._validate_data()  # 验证数据
+            self.data = self.preprocessor.preprocess(raw_data, self.team_data)
+            self._validate_data()
             self.all_players = self.data['name'].unique()
-            print(f"加载了 {len(self.all_players)} 名球员")
+            print(f"✅ 成功加载 {len(self.all_players)} 名球员数据")
         except Exception as e:
-            print(f"数据加载错误: {str(e)}")
+            print(f"❌ 数据预处理错误: {str(e)}")
             raise
         
         # 保存参数
@@ -80,10 +94,9 @@ class FPLEnv(gym.Env):
         if season:
             try:
                 raw_data = self.data_loader.load_data(season)
-                team_list = self.data_loader.load_team_list()
-                self.data = self.preprocessor.preprocess(raw_data, team_list)
+                self.data = self.preprocessor.preprocess(raw_data, self.team_data)
             except Exception as e:
-                print(f"加载赛季数据错误: {str(e)}")
+                print(f"❌ 加载赛季数据错误: {str(e)}")
                 raise
         
         self.current_gameweek = 1
@@ -218,3 +231,29 @@ class FPLEnv(gym.Env):
         except Exception as e:
             print(f"Error adding position information: {e}")
             return False
+
+    def _load_team_data(self) -> pd.DataFrame:
+        """加载球队数据"""
+        try:
+            team_data = pd.read_csv(self.teams_file)
+            print(f"✅ 成功加载 {len(team_data)} 支球队数据")
+            return team_data
+        except Exception as e:
+            print(f"❌ 球队数据加载失败: {str(e)}")
+            raise
+
+    def _validate_data_files(self):
+        """验证数据文件"""
+        if not self.seasons_file.exists():
+            raise FileNotFoundError(f"找不到赛季数据文件: {self.seasons_file}")
+            
+        if not self.teams_file.exists():
+            raise FileNotFoundError(f"找不到球队数据文件: {self.teams_file}")
+            
+        if self.seasons_file.stat().st_size == 0:
+            raise ValueError(f"赛季数据文件为空: {self.seasons_file}")
+            
+        if self.teams_file.stat().st_size == 0:
+            raise ValueError(f"球队数据文件为空: {self.teams_file}")
+            
+        print("✅ 数据文件验证通过")
