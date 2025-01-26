@@ -170,32 +170,77 @@ class DilatedTCN(nn.Module):
     
     def compute_loss(self, episode_data, season):
         """计算损失"""
-        # 转换状态为张量
-        states = episode_data['states']
-        actions = torch.FloatTensor(episode_data['actions']).to(self.device)
-        rewards = torch.FloatTensor(episode_data['rewards']).to(self.device)
-        next_states = episode_data['next_states']
-        dones = torch.FloatTensor(episode_data['dones']).to(self.device)
-        
-        # 处理状态和下一个状态
-        state_features = torch.FloatTensor(np.stack([s['player_features'] for s in states])).to(self.device)
-        next_state_features = torch.FloatTensor(np.stack([s['player_features'] for s in next_states])).to(self.device)
-        
-        # 计算当前Q值
-        current_q = self.forward(state_features)
-        
-        # 计算目标Q值
-        with torch.no_grad():
-            next_q = self.forward(next_state_features)
-            target_q = rewards + (1 - dones) * self.gamma * next_q
-        
-        # 计算损失
-        loss = self.criterion(current_q, target_q)
-        
-        return {
-            'loss': loss.item(),
-            'avg_reward': rewards.mean().item()
-        }
+        try:
+            # 转换状态为张量
+            states = episode_data['states']
+            actions = torch.FloatTensor(episode_data['actions']).to(self.device)
+            rewards = torch.FloatTensor(episode_data['rewards']).to(self.device)
+            next_states = episode_data['next_states']
+            dones = torch.FloatTensor(episode_data['dones']).to(self.device)
+            
+            # 处理状态和下一个状态
+            # 使用填充来处理不同长度的序列
+            max_len = max(s['player_features'].shape[0] for s in states)
+            
+            def pad_features(features, max_len):
+                """填充特征到最大长度"""
+                pad_size = max_len - features.shape[0]
+                if pad_size > 0:
+                    # 创建填充
+                    padding = np.zeros((pad_size,) + features.shape[1:])
+                    # 连接原始特征和填充
+                    return np.concatenate([features, padding], axis=0)
+                return features
+            
+            # 填充并堆叠特征
+            padded_states = np.stack([
+                pad_features(s['player_features'], max_len) for s in states
+            ])
+            padded_next_states = np.stack([
+                pad_features(s['player_features'], max_len) for s in next_states
+            ])
+            
+            # 转换为张量
+            state_features = torch.FloatTensor(padded_states).to(self.device)
+            next_state_features = torch.FloatTensor(padded_next_states).to(self.device)
+            
+            # 创建掩码来忽略填充的部分
+            state_lengths = torch.tensor([
+                s['player_features'].shape[0] for s in states
+            ]).to(self.device)
+            
+            # 计算当前Q值
+            current_q = self.forward(state_features)  # [batch_size, seq_len, hidden_dim]
+            
+            # 计算目标Q值
+            with torch.no_grad():
+                next_q = self.forward(next_state_features)
+                # 只使用每个序列的实际长度部分
+                next_q = torch.stack([
+                    next_q[i, :length] for i, length in enumerate(state_lengths)
+                ])
+                target_q = rewards.unsqueeze(-1) + (1 - dones.unsqueeze(-1)) * self.gamma * next_q
+            
+            # 应用掩码并计算损失
+            loss = 0
+            for i, length in enumerate(state_lengths):
+                loss += self.criterion(
+                    current_q[i, :length],
+                    target_q[i, :length]
+                )
+            loss = loss / len(states)  # 平均损失
+            
+            return {
+                'loss': loss.item(),
+                'avg_reward': rewards.mean().item()
+            }
+            
+        except Exception as e:
+            print(f"Error in compute_loss: {str(e)}")
+            print(f"States shapes: {[s['player_features'].shape for s in states]}")
+            print(f"Actions shape: {actions.shape}")
+            print(f"Rewards shape: {rewards.shape}")
+            raise
 
 class GATFusion(nn.Module):
     """图注意力融合模块"""
