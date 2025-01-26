@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import random
 
 class DilatedTCN(nn.Module):
     """带有扩张的时间卷积网络"""
@@ -146,10 +147,17 @@ class DilatedTCN(nn.Module):
             # 生成动作概率
             action_probs = torch.sigmoid(self.action_head(features))
             
-            # 使用阈值生成二元动作
-            action = (action_probs > 0.5).float()
+            # 添加探索
+            if self.training:
+                epsilon = 0.1  # 可以随训练进度衰减
+                if random.random() < epsilon:
+                    action = torch.rand_like(action_probs)
+                else:
+                    action = (action_probs > 0.5).float()
+            else:
+                action = (action_probs > 0.5).float()
             
-            return action.detach()  # 返回分离的张量
+            return action.detach()
             
         except Exception as e:
             print(f"Error in select_action: {str(e)}")
@@ -210,28 +218,52 @@ class DilatedTCN(nn.Module):
             ]).to(self.device)
             
             # 计算当前Q值
-            current_q = self.forward(state_features)  # [batch_size, seq_len, hidden_dim]
+            current_q = self.forward(state_features)  # [batch_size, max_len, hidden_dim]
             
             # 计算目标Q值
             with torch.no_grad():
-                next_q = self.forward(next_state_features)
-                # 只使用每个序列的实际长度部分
-                next_q = torch.stack([
-                    next_q[i, :length] for i, length in enumerate(state_lengths)
-                ])
+                next_q = self.forward(next_state_features)  # [batch_size, max_len, hidden_dim]
+                
+                # 创建掩码
+                mask = torch.arange(max_len).unsqueeze(0).to(self.device) < state_lengths.unsqueeze(1)
+                mask = mask.unsqueeze(-1).float()  # [batch_size, max_len, 1]
+                
+                # 应用掩码
+                next_q = next_q * mask
+                
+                # 对每个序列进行池化
+                next_q = next_q.sum(dim=1) / state_lengths.unsqueeze(1)  # [batch_size, hidden_dim]
+                
+                # 计算目标值
                 target_q = rewards.unsqueeze(-1) + (1 - dones.unsqueeze(-1)) * self.gamma * next_q
             
-            # 应用掩码并计算损失
-            loss = 0
-            for i, length in enumerate(state_lengths):
-                loss += self.criterion(
-                    current_q[i, :length],
-                    target_q[i, :length]
-                )
-            loss = loss / len(states)  # 平均损失
+            # 对当前Q值也应用相同的掩码和池化
+            current_q = current_q * mask
+            current_q = current_q.sum(dim=1) / state_lengths.unsqueeze(1)  # [batch_size, hidden_dim]
+            
+            # 计算策略损失和值函数损失
+            policy_loss = self.criterion(current_q, target_q)
+            value_loss = F.mse_loss(self.value_head(current_q).squeeze(), rewards)
+            
+            # 添加正则化损失
+            l2_reg = 0.01 * sum(p.pow(2.0).sum() for p in self.parameters())
+            
+            # 计算总损失
+            total_loss = policy_loss + 0.5 * value_loss + l2_reg
+            
+            # 添加调试信息
+            if total_loss.item() > 100:
+                print(f"\nDEBUG: Loss breakdown:")
+                print(f"Policy loss: {policy_loss.item()}")
+                print(f"Value loss: {value_loss.item()}")
+                print(f"L2 reg: {l2_reg.item()}")
+                print(f"Total loss: {total_loss.item()}")
+                print(f"Average reward: {rewards.mean().item()}")
             
             return {
-                'loss': loss.item(),
+                'policy_loss': policy_loss,
+                'value_loss': value_loss,
+                'total_loss': total_loss,
                 'avg_reward': rewards.mean().item()
             }
             
@@ -240,6 +272,8 @@ class DilatedTCN(nn.Module):
             print(f"States shapes: {[s['player_features'].shape for s in states]}")
             print(f"Actions shape: {actions.shape}")
             print(f"Rewards shape: {rewards.shape}")
+            print(f"Max length: {max_len}")
+            print(f"State lengths: {[s['player_features'].shape[0] for s in states]}")
             raise
 
 class GATFusion(nn.Module):

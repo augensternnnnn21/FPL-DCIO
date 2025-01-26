@@ -411,39 +411,26 @@ class FPLEnv(gym.Env):
         print("✅ 数据文件验证通过")
 
     def _calculate_reward(self, action, current_data):
-        """计算奖励值
-        
-        Args:
-            action: 选择的球员 (numpy array)
-            current_data: 当前比赛周的数据 (DataFrame)
-        
-        Returns:
-            float: 奖励值
-        """
+        """计算奖励"""
         try:
-            # 获取选中球员的总分
-            selected_points = current_data['total_points'].values * action
-            total_points = np.sum(selected_points)
+            # 基础奖励：选中球员的总得分
+            total_points = np.sum(current_data['total_points'].values * action)
             
-            # 获取选中球员的总价值
+            # 计算约束违反惩罚
+            penalties = 0
+            
+            # 预算约束
             selected_values = current_data['value'].values * action
             total_value = np.sum(selected_values)
-            
-            # 计算基础奖励（基于得分）
-            reward = total_points
-            
-            # 添加预算约束的惩罚
             if total_value > self.budget:
-                reward -= (total_value - self.budget) * 10  # 可以调整惩罚系数
+                penalties += (total_value - self.budget) * 10
             
-            # 添加球员数量约束的惩罚
+            # 球员数量约束
             num_selected = np.sum(action)
-            if num_selected > self.max_players:
-                reward -= (num_selected - self.max_players) * 100  # 可以调整惩罚系数
-            elif num_selected < self.max_players:
-                reward -= (self.max_players - num_selected) * 100  # 可以调整惩罚系数
+            if num_selected != self.max_players:
+                penalties += abs(num_selected - self.max_players) * 50
             
-            # 添加位置约束的惩罚
+            # 位置约束
             position_counts = {
                 'GK': np.sum(action * (current_data['position'] == 'GK')),
                 'DEF': np.sum(action * (current_data['position'] == 'DEF')),
@@ -451,18 +438,28 @@ class FPLEnv(gym.Env):
                 'FWD': np.sum(action * (current_data['position'] == 'FWD'))
             }
             
-            # 检查每个位置的球员数量是否符合要求
-            if position_counts['GK'] != 2:  # 需要2名门将
-                reward -= abs(2 - position_counts['GK']) * 100
-            if position_counts['DEF'] < 3 or position_counts['DEF'] > 5:  # 3-5名后卫
-                reward -= 100
-            if position_counts['MID'] < 3 or position_counts['MID'] > 5:  # 3-5名中场
-                reward -= 100
-            if position_counts['FWD'] < 1 or position_counts['FWD'] > 3:  # 1-3名前锋
-                reward -= 100
+            # 检查位置约束
+            if position_counts['GK'] != 2:
+                penalties += abs(2 - position_counts['GK']) * 30
+            if not (3 <= position_counts['DEF'] <= 5):
+                penalties += 30
+            if not (3 <= position_counts['MID'] <= 5):
+                penalties += 30
+            if not (1 <= position_counts['FWD'] <= 3):
+                penalties += 30
             
-            # 更新可用预算
-            self.available_budget = self.budget - total_value
+            # 最终奖励
+            reward = total_points - penalties
+            
+            # 添加调试信息
+            if penalties > 0:
+                print(f"\nDEBUG: Reward breakdown:")
+                print(f"Total points: {total_points}")
+                print(f"Penalties: {penalties}")
+                print(f"Final reward: {reward}")
+                print(f"Position counts: {position_counts}")
+                print(f"Total value: {total_value}")
+                print(f"Players selected: {num_selected}")
             
             return reward
             
@@ -470,5 +467,4 @@ class FPLEnv(gym.Env):
             print(f"Error calculating reward: {str(e)}")
             print(f"Action shape: {action.shape}")
             print(f"Current data shape: {current_data.shape}")
-            print(f"Available columns: {current_data.columns}")
             raise

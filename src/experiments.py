@@ -280,22 +280,16 @@ class ExperimentRunner:
         for episode in progress_bar:
             # 随机选择一个训练赛季
             self.current_season = np.random.choice(self.config.train_seasons)
-            data_path = os.path.join(self.base_data_path, self.current_season, f"{self.current_season}_processed.csv")
             
-            # 创建符合FPLEnv要求的配置对象
+            # 创建环境配置
             env_config = ExperimentConfig(
-                data_path=str(data_path),
+                data_path=str(os.path.join(self.base_data_path, self.current_season, f"{self.current_season}_processed.csv")),
                 train_seasons=self.config.train_seasons,
                 val_season=self.config.val_season,
                 test_season=self.config.test_season,
                 budget=self.config.budget,
                 max_players=self.config.max_players
             )
-            
-            print("\nDEBUG: 环境配置对象结构:")
-            print(f"类型: {type(env_config)}")
-            print(f"包含data_path字段: {'data_path' in env_config.__dict__}")
-            print(f"完整配置: {env_config.__dict__}")
             
             self.env = FPLEnv(env_config)
             
@@ -307,15 +301,18 @@ class ExperimentRunner:
             
             # 优化器步骤
             self.optimizer.zero_grad()
-            loss_dict['total_loss'].backward()
+            
+            # 确保损失是标量
+            if isinstance(loss_dict['total_loss'], torch.Tensor):
+                loss_dict['total_loss'].backward()
+            else:
+                print(f"Warning: total_loss is not a tensor: {type(loss_dict['total_loss'])}")
+                continue
             
             # 梯度裁剪
-            grad_clip = 1.0  # 设置默认值
+            grad_clip = 1.0
             if grad_clip > 0:
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), 
-                    grad_clip
-                )
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), grad_clip)
             
             self.optimizer.step()
             
@@ -323,7 +320,8 @@ class ExperimentRunner:
             self._log_training_progress(episode, {
                 'policy_loss': loss_dict['policy_loss'].item(),
                 'value_loss': loss_dict['value_loss'].item(),
-                'total_loss': loss_dict['total_loss'].item()
+                'total_loss': loss_dict['total_loss'].item(),
+                'avg_reward': loss_dict['avg_reward']
             })
     
     def _evaluate_generalization(self):
