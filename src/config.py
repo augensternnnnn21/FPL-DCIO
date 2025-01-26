@@ -10,6 +10,10 @@ print("\nDEBUG: Initial PROJECT_ROOT:", PROJECT_ROOT)
 # 确保导出所有需要的类和变量
 __all__ = ['PROJECT_ROOT', 'ExperimentConfig', 'ModelConfig', 'TrainingConfig', 'EnvironmentConfig', 'DEFAULT_CONFIG', 'COVID_CONFIG']
 
+# 添加或确认这些常量的定义
+BUDGET = 100.0  # 预算限制
+NUM_PLAYERS = 15  # 最大球员数量
+
 @dataclass
 class ModelConfig:
     """模型配置"""

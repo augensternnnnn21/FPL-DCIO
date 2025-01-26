@@ -44,8 +44,14 @@ EVALUATE_INTERVAL = 50
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # 导入实验配置
-from .experiment_config import ExperimentConfig, DEFAULT_CONFIG, COVID_CONFIG
+from .experiment_config import ExperimentConfig, COVID_CONFIG
 
+# 创建默认配置函数
+def get_default_config() -> ExperimentConfig:
+    """获取默认配置"""
+    return ExperimentConfig()
+
+# 导出所需的内容
 __all__ = [
     # 路径配置
     'PROJECT_ROOT',
@@ -79,6 +85,6 @@ __all__ = [
     
     # 实验配置
     'ExperimentConfig',
-    'DEFAULT_CONFIG',
-    'COVID_CONFIG'
+    'COVID_CONFIG',
+    'get_default_config'
 ]

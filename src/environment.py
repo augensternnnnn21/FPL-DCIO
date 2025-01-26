@@ -10,7 +10,7 @@ from collections import defaultdict
 from typing import Tuple, Dict, Any
 
 class FPLEnv(gym.Env):
-    def __init__(self, data_path: str, budget: float = 100.0, max_players: int = 15, history_length: int = 5, season=None):
+    def __init__(self, data_path: str, budget: float = 100.0, max_players: int = 15, history_length: int = 5):
         """
         初始化FPL环境
         Args:
@@ -18,114 +18,150 @@ class FPLEnv(gym.Env):
             budget: 预算限制
             max_players: 最大球员数量
             history_length: 历史数据长度
-            season: 可选的赛季参数
         """
         super().__init__()
-        print(f"Loading raw data from {data_path}")
+        
+        # 保存参数
         self.data_path = data_path
         self.budget = budget
         self.max_players = max_players
         self.history_length = history_length
-        self.current_season = season
-        
-        # 位置映射
-        self.position_map = {
-            'GKP': 0,  # 门将
-            'DEF': 1,  # 后卫
-            'MID': 2,  # 中场
-            'FWD': 3   # 前锋
-        }
-        self.num_positions = len(self.position_map)
         
         # 加载数据
-        self.data = self._load_data()
-        if self.data is None:
-            raise ValueError(f"Failed to load data from {self.data_path}")
+        print(f"\nLoading data from {self.data_path}")
+        try:
+            self.data = pd.read_csv(self.data_path)
+            print(f"Successfully loaded data with {len(self.data)} rows")
+            
+            # 验证数据
+            required_columns = ['name', 'value', 'total_points', 'position', 'team', 'gw']
+            missing_columns = [col for col in required_columns if col not in self.data.columns]
+            if missing_columns:
+                raise ValueError(f"Missing required columns: {missing_columns}")
+            
+            # 数据预处理
+            self._preprocess_data()
+            
+        except FileNotFoundError:
+            print(f"Error: Data file not found at {self.data_path}")
+            raise
+        except pd.errors.EmptyDataError:
+            print(f"Error: Data file is empty at {self.data_path}")
+            raise
+        except Exception as e:
+            print(f"Error loading data: {str(e)}")
+            raise
         
-        # 添加球队信息
-        self._add_team_info()
+        # 初始化状态空间
+        self._init_spaces()
         
-        # 获取所有球队
-        self.teams = sorted(self.data['team'].unique())
-        self.team_map = {team: idx for idx, team in enumerate(self.teams)}
-        self.num_teams = len(self.teams)
-        
-        # 初始化状态变量
-        self.current_gameweek = 0
-        self.selected_players = []
-        self.available_budget = budget
-        self.history = []
-        
-        # 约束参数
-        self.position_limits = {
-            'GK': 2,
-            'DEF': 5,
-            'MID': 5,
-            'FWD': 3
-        }
-        self.max_per_team = 3
-        
-        # 初始化状态
+        # 重置环境
         self.reset()
     
-    def _load_data(self) -> pd.DataFrame:
+    def _preprocess_data(self):
+        """数据预处理"""
+        # 确保数值列的类型正确
+        numeric_columns = ['value', 'total_points']
+        for col in numeric_columns:
+            self.data[col] = pd.to_numeric(self.data[col], errors='coerce')
+        
+        # 处理缺失值
+        self.data = self.data.fillna(0)
+        
+        # 确保gameweek是整数
+        self.data['gw'] = self.data['gw'].astype(int)
+        
+        # 获取所有唯一的球员
+        self.all_players = self.data['name'].unique()
+        print(f"Total unique players: {len(self.all_players)}")
+        
+        # 创建球员ID映射
+        self.player_id_map = {name: idx for idx, name in enumerate(self.all_players)}
+        self.inverse_id_map = {idx: name for name, idx in self.player_id_map.items()}
+        
+        # 添加球队和位置信息
+        self._add_team_info()
+        self._add_position_info()
+    
+    def _init_spaces(self):
+        """初始化动作和观察空间"""
+        # 状态空间：每个球员的特征向量
+        num_features = 12  # 根据实际特征数量调整
+        self.observation_space = spaces.Box(
+            low=-np.inf,
+            high=np.inf,
+            shape=(len(self.all_players), num_features),
+            dtype=np.float32
+        )
+        
+        # 动作空间：选择或不选择每个球员
+        self.action_space = spaces.MultiBinary(len(self.all_players))
+    
+    def _load_data(self):
         """加载数据"""
-        print(f"\nDEBUG: Loading raw data from {self.data_path}")
         try:
+            # 如果指定了赛季，尝试加载该赛季的数据
             if self.current_season:
-                season_path = os.path.join(self.data_path, self.current_season)
-                print(f"Loading processed data from {season_path}")
-                # 检查是否存在处理好的数据文件
-                processed_file = os.path.join(season_path, f"{self.current_season}_processed.csv")
-                if os.path.exists(processed_file):
-                    print(f"Loading processed data from {processed_file}")
-                    return pd.read_csv(processed_file)
-                
-                print(f"Loading raw data from {season_path}/gws")
-                all_data = []
-                gw_path = os.path.join(season_path, 'gws')
-                
-                if not os.path.exists(gw_path):
-                    raise ValueError(f"Game week directory not found: {gw_path}")
-                
-                # 加载每个比赛周的数据
-                for gw in range(1, 39):  # 假设有38个比赛周
-                    gw_file = os.path.join(gw_path, f'gw{gw}.csv')
-                    if os.path.exists(gw_file):
-                        try:
-                            # 尝试不同的编码
-                            for encoding in ['utf-8', 'latin1', 'cp1252']:
-                                try:
-                                    df = pd.read_csv(gw_file, encoding=encoding)
-                                    df['gameweek'] = gw
-                                    all_data.append(df)
-                                    print(f"Successfully loaded gameweek {gw} with {encoding} encoding")
-                                    break
-                                except UnicodeDecodeError:
-                                    continue
-                        except Exception as e:
-                            print(f"Error loading gameweek {gw}: {e}")
-                
-                if not all_data:
-                    raise ValueError(f"No gameweek data loaded from: {season_path}")
-                
-                # 合并所有数据
-                data = pd.concat(all_data, ignore_index=True)
-                
-                # 添加位置信息
-                data = self._infer_position(data)
-                
-                # 保存处理后的数据
-                data.to_csv(processed_file, index=False)
-                print(f"Saved processed data to {processed_file}")
-                
-                return data
-            else:
-                # 如果没有指定赛季，使用默认路径
+                # 首先尝试加载处理好的数据
                 if os.path.exists(self.data_path):
-                    return pd.read_csv(self.data_path)
-                else:
-                    raise ValueError(f"Data file not found: {self.data_path}")
+                    print(f"Loading processed data from {self.data_path}")
+                    data = pd.read_csv(self.data_path)
+                    
+                    # 重命名 gameweek 列为 gw
+                    if 'gameweek' in data.columns:
+                        data = data.rename(columns={'gameweek': 'gw'})
+                    
+                    return data
+                
+                # 如果没有处理好的数据，尝试从原始数据加载
+                raw_data_path = os.path.join(
+                    os.path.dirname(self.data_path),
+                    'gws'
+                )
+                
+                if os.path.exists(raw_data_path):
+                    print(f"\nProcessing {self.current_season}...")
+                    print(f"Loading data for season {raw_data_path}...")
+                    
+                    # 加载所有比赛周数据
+                    all_gws = []
+                    for i in range(1, 39):  # 假设有38个比赛周
+                        gw_path = os.path.join(raw_data_path, f'gw{i}.csv')
+                        if os.path.exists(gw_path):
+                            try:
+                                # 尝试不同的编码
+                                try:
+                                    gw_data = pd.read_csv(gw_path)
+                                except UnicodeDecodeError:
+                                    gw_data = pd.read_csv(gw_path, encoding='latin1')
+                                
+                                # 添加比赛周信息
+                                gw_data['gw'] = i
+                                
+                                all_gws.append(gw_data)
+                                print(f"Successfully loaded gameweek {i} with latin1 encoding")
+                            except Exception as e:
+                                print(f"Error loading gameweek {i}: {e}")
+                                continue
+                    
+                    if all_gws:
+                        data = pd.concat(all_gws, ignore_index=True)
+                        print(f"Total gameweeks loaded: {len(all_gws)}")
+                        
+                        # 保存处理后的数据
+                        os.makedirs(os.path.dirname(self.data_path), exist_ok=True)
+                        data.to_csv(self.data_path, index=False)
+                        print(f"Saved processed data to {self.data_path}")
+                        return data
+                    else:
+                        print("No gameweek data found")
+                        return None
+                
+                print(f"Data path not found: {self.data_path}")
+                return None
+            
+            return None
+            
         except Exception as e:
             print(f"Error loading data: {e}")
             return None
@@ -408,39 +444,21 @@ class FPLEnv(gym.Env):
             print(f"Available columns: {players_data.columns.tolist()}")
             print(f"First few rows:\n{players_data.head()}")
             raise
-
+    
     def _get_state(self):
         """获取当前状态"""
-        try:
-            # 获取当前可用的球员
-            available_players = self._get_available_players()
-            
-            # 获取球员特征
-            player_features = self._get_player_features(available_players)
-            
-            # 获取位置的独热编码
-            position_onehot = self._get_position_onehot(available_players)
-            
-            # 获取球队的独热编码
-            team_onehot = self._get_team_onehot(available_players)
-            
-            # 组合所有特征
-            state = {
-                'player_features': player_features,
-                'position_onehot': position_onehot,
-                'team_onehot': team_onehot,
-                'budget': self.budget,
-                'current_players': len(self.selected_players),
-                'gameweek': self.current_gameweek
-            }
-            
-            return state
-            
-        except Exception as e:
-            print(f"Error getting state: {str(e)}")
-            print(f"Current gameweek: {self.current_gameweek}")
-            print(f"Selected players: {self.selected_players}")
-            raise
+        # 获取当前比赛周的数据
+        gw_data = self.data[self.data['gw'] == self.current_gameweek].copy()
+        
+        # 更新当前比赛周的球员映射
+        current_players = gw_data['name'].unique()
+        self.current_id_map = {name: idx for idx, name in enumerate(current_players)}
+        self.current_inverse_map = {idx: name for name, idx in self.current_id_map.items()}
+        
+        # 提取特征
+        features = self._extract_features(gw_data)
+        
+        return features
     
     def _extract_features(self, players_data):
         """提取特征"""
@@ -541,98 +559,69 @@ class FPLEnv(gym.Env):
         return self._get_state()
     
     def step(self, action):
-        """执行动作"""
+        """执行一步动作"""
         # 获取当前比赛周的数据
-        gw_data = self.data[self.data['gw'] == self.current_gameweek].copy()
+        current_players = self._get_available_players()
         
-        # 获取当前比赛周的球员名单
-        current_gw_players = set(gw_data['name'])
+        # 如果action是张量，转换为numpy数组
+        if isinstance(action, torch.Tensor):
+            action = action.cpu().numpy()
         
-        valid_actions = []
+        # 确保action的长度与当前可用球员数量相同
+        if len(action) > len(current_players):
+            action = action[:len(current_players)]
         
-        for idx in action:
-            if idx < self.num_players:
-                player_name = self.inverse_id_map.get(idx)
-                if player_name in current_gw_players:
-                    valid_actions.append(idx)
+        # 获取选中的球员
+        selected_indices = np.where(action)[0]
+        selected_players = current_players.iloc[selected_indices]
         
-        # 验证选择
-        selected_players = self.data[
-            (self.data['gw'] == self.current_gameweek) & 
-            (self.data['name'].isin([self.inverse_id_map[idx] for idx in valid_actions]))
-        ]
-        
-        total_cost = selected_players['value'].sum()
-        
-        # 检查约束
-        positions = selected_players['position'].value_counts()
-        budget_ok = total_cost <= self.budget
-        
-        # 初始化奖励
-        reward = 0
-        
-        if not budget_ok:
-            reward = -min(total_cost - self.budget, 100)
-            if self.verbose:
-                print(f"预算超支: {total_cost - self.budget:.1f}，奖励: {reward:.1f}")
-            # 确保返回的状态是字典
-            next_state = self._get_state()
-            return next_state, reward, True, False, {}
-
-        # 计算合规性奖励（位置约束满足度）
-        position_reward = sum([1 if positions.get(pos, 0) == req else -0.2 for pos, req in self.position_limits.items()])
-        budget_reward = 0.5 * (total_cost / BUDGET)  # 鼓励使用预算
-
-        # 新增：对手强度惩罚（对手过去5场平均失球数越少，得分难度越高）
-        team_strength = selected_players['team_strength'].mean()
-        strength_bonus = 0.2 * team_strength  # 使用球队强度作为奖励组件
-        
-        # 计算得分奖励
+        # 计算实际奖励（使用总分）
         total_points = selected_players['total_points'].sum()
+        reward = float(total_points) if isinstance(total_points, (int, float)) else 0.0
         
-        # 处理第一周的特殊情况
-        if self.current_gameweek == 1:
-            current_max_points = self.data[self.data['gw'] == 1]['total_points'].max()
-        else:
-            current_max_points = self.data[self.data['gw'] == self.current_gameweek]['total_points'].max()
+        # 添加约束惩罚
+        position_counts = selected_players['position'].value_counts()
+        team_counts = selected_players['team'].value_counts()
         
-        # 添加阵容稳定性约束
-        stability_penalty = 0
-        if self.current_gameweek > 1:
-            cost_ratio_diff = (total_cost / BUDGET) - self.last_cost_ratio
-            stability_penalty = -0.1 * (cost_ratio_diff ** 2)
-        self.last_cost_ratio = total_cost / BUDGET
+        # 1. 位置约束
+        required_counts = {'GK': 2, 'DEF': 5, 'MID': 5, 'FWD': 3}
+        for pos, required in required_counts.items():
+            actual = position_counts.get(pos, 0)
+            if actual != required:
+                reward -= 100 * abs(actual - required)  # 增加惩罚力度
         
-        # 避免除以0
-        current_max_points = max(current_max_points, 1)
-        points_reward = total_points / current_max_points
+        # 2. 球队约束
+        if team_counts.max() > 3:
+            reward -= 100 * (team_counts.max() - 3)  # 增加惩罚力度
         
-        # 计算总奖励
-        reward = (0.7 * points_reward + 
-                 0.2 * position_reward + 
-                 0.1 * budget_reward + 
-                 strength_bonus + 
-                 stability_penalty)
-        
-        if self.verbose:
-            print(f"得分奖励: {points_reward:.3f}")
-            print(f"合规性奖励: {position_reward:.3f}")
-            print(f"预算奖励: {budget_reward:.3f}")
-            print(f"总奖励: {reward:.3f}")
-            print(f"本周得分: {total_points:.1f}")
-            print(f"本周最高分: {self.max_points_by_gw.loc[self.current_gameweek]:.1f}")
-        
-        # 更新状态
-        self.selected_players = valid_actions
-        self.budget = self.budget - total_cost
+        # 3. 总人数约束
+        if len(selected_players) != 15:
+            reward -= 100 * abs(len(selected_players) - 15)  # 增加惩罚力度
         
         # 更新比赛周
         self.current_gameweek += 1
         done = self.current_gameweek > 38
         
-        # 确保返回的状态是字典
-        next_state = self._get_state()
-        return next_state, reward, done, False, {}
+        # 准备下一个状态
+        next_state = self._get_state() if not done else None
+        
+        # 打印调试信息
+        print(f"\nStep Info:")
+        print(f"Gameweek: {self.current_gameweek}")
+        print(f"Available players: {len(current_players)}")
+        print(f"Selected players: {len(selected_players)}")
+        print(f"Total points: {reward}")
+        print(f"Position distribution: {dict(position_counts)}")
+        print(f"Team distribution: {dict(team_counts)}")
+        
+        return next_state, reward, done, {
+            'selected_players': selected_players,
+            'total_points': reward,
+            'position_counts': position_counts,
+            'team_counts': team_counts,
+            'available_players': len(current_players),
+            'selected_count': len(selected_players)
+        }
 
     def _add_team_info(self):
         """添加球队信息"""
@@ -651,3 +640,46 @@ class FPLEnv(gym.Env):
         except Exception as e:
             print(f"Error adding team information: {e}")
             print(f"Available columns: {self.data.columns.tolist() if self.data is not None else 'No data loaded'}")
+
+    def _create_player_mappings(self):
+        """创建球员ID映射"""
+        # 获取所有唯一的球员名字
+        unique_players = self.data['name'].unique()
+        
+        # 创建正向和反向映射
+        self.id_map = {name: idx for idx, name in enumerate(unique_players)}
+        self.inverse_id_map = {idx: name for name, idx in self.id_map.items()}
+        
+        # 记录球员总数
+        self.num_players = len(unique_players)
+        print(f"\nTotal unique players: {self.num_players}")
+
+    def _add_position_info(self):
+        """添加位置信息"""
+        try:
+            # 根据element_type映射位置
+            position_map = {
+                1: 'GK',  # 门将
+                2: 'DEF', # 后卫
+                3: 'MID', # 中场
+                4: 'FWD'  # 前锋
+            }
+            
+            # 确保element_type列存在
+            if 'element_type' not in self.data.columns:
+                print("Warning: element_type column not found")
+                return False
+            
+            # 映射位置
+            self.data['position'] = self.data['element_type'].map(position_map)
+            
+            # 验证映射结果
+            position_counts = self.data['position'].value_counts()
+            print("\nPosition distribution:")
+            print(position_counts)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error adding position information: {e}")
+            return False

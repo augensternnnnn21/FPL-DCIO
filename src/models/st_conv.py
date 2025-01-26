@@ -128,83 +128,168 @@ class GATFusion(nn.Module):
         
         return out
 
+class TemporalConvNet(nn.Module):
+    """时间卷积网络"""
+    def __init__(self, input_dim, hidden_dim=64):
+        super().__init__()
+        self.tcn = nn.Sequential(
+            # 第一层：从input_dim到hidden_dim
+            nn.Conv1d(input_dim, hidden_dim, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm1d(hidden_dim),
+            # 第二层：保持hidden_dim
+            nn.Conv1d(hidden_dim, hidden_dim, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm1d(hidden_dim)
+        )
+    
+    def forward(self, x):
+        """
+        前向传播
+        Args:
+            x: 输入张量 [batch_size, num_players, input_dim]
+        Returns:
+            输出张量 [batch_size, num_players, hidden_dim]
+        """
+        # 打印输入维度
+        print(f"TCN input shape before permute: {x.shape}")
+        
+        # 调整维度顺序：[batch_size, num_players, input_dim] -> [batch_size, input_dim, num_players]
+        x = x.permute(0, 2, 1)
+        print(f"TCN input shape after permute: {x.shape}")
+        
+        # 应用TCN
+        x = self.tcn(x)
+        print(f"TCN output shape before permute back: {x.shape}")
+        
+        # 恢复维度顺序：[batch_size, hidden_dim, num_players] -> [batch_size, num_players, hidden_dim]
+        x = x.permute(0, 2, 1)
+        print(f"TCN final output shape: {x.shape}")
+        
+        return x
+
 class STConv(nn.Module):
     """时空卷积模块"""
-    def __init__(self, input_dim, hidden_dim, gcn_types, temporal_win=5):
+    def __init__(self, input_dim, hidden_dim=64, gcn_types=None, temporal_win=5):
         super().__init__()
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.temporal_win = temporal_win
         
-        # 时间卷积网络
-        self.tcn = DilatedTCN(
-            input_dim=input_dim,
-            hidden_dim=hidden_dim,
-            kernel_size=3,
-            dilation=2
-        )
+        # 时间卷积
+        self.tcn = TemporalConvNet(input_dim=hidden_dim, hidden_dim=hidden_dim)
         
-        # 图注意力层
-        self.gat_layers = nn.ModuleDict({
-            gtype: GATFusion(input_dim=input_dim, hidden_dim=hidden_dim)
-            for gtype in gcn_types
+        # 空间图卷积
+        if gcn_types is None:
+            gcn_types = ['position', 'team', 'value']
+        self.gcn_types = gcn_types
+        
+        self.gcns = nn.ModuleDict({
+            gtype: nn.Sequential(
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.LayerNorm(hidden_dim)
+            ) for gtype in gcn_types
         })
         
-        # 时间特征投影
-        self.temporal_proj = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.LayerNorm(hidden_dim)
-        )
-        
-        # 特征融合层
-        self.fusion = nn.Sequential(
-            nn.Linear(hidden_dim * (len(gcn_types) + 1), hidden_dim),  # +1 是为了时间特征
-            nn.ReLU(),
-            nn.LayerNorm(hidden_dim)
-        )
+        # 图注意力融合
+        self.gat_fusion = GATFusion(hidden_dim, hidden_dim)
     
-    def forward(self, x, adj_matrices):
+    def _build_position_adj_matrix(self, position_onehot):
+        """
+        构建基于位置的邻接矩阵
+        Args:
+            position_onehot: [batch_size, num_players, num_positions]
+        Returns:
+            邻接矩阵 [batch_size, num_players, num_players]
+        """
+        # 打印输入维度
+        print(f"Position one-hot shape: {position_onehot.shape}")
+        
+        # 计算相似度矩阵
+        adj = torch.matmul(position_onehot, position_onehot.transpose(-2, -1))
+        
+        # 归一化
+        adj = F.softmax(adj, dim=-1)
+        
+        print(f"Position adjacency matrix shape: {adj.shape}")
+        return adj
+    
+    def _build_team_adj_matrix(self, team_onehot):
+        """
+        构建基于球队的邻接矩阵
+        Args:
+            team_onehot: [batch_size, num_players, num_teams]
+        Returns:
+            邻接矩阵 [batch_size, num_players, num_players]
+        """
+        # 打印输入维度
+        print(f"Team one-hot shape: {team_onehot.shape}")
+        
+        # 计算相似度矩阵
+        adj = torch.matmul(team_onehot, team_onehot.transpose(-2, -1))
+        
+        # 归一化
+        adj = F.softmax(adj, dim=-1)
+        
+        print(f"Team adjacency matrix shape: {adj.shape}")
+        return adj
+    
+    def _build_value_adj_matrix(self, values):
+        """
+        构建基于价值的邻接矩阵
+        Args:
+            values: [batch_size, num_players]
+        Returns:
+            邻接矩阵 [batch_size, num_players, num_players]
+        """
+        # 打印输入维度
+        print(f"Value feature shape: {values.shape}")
+        
+        # 扩展维度以便计算差异
+        values = values.unsqueeze(-1)  # [batch_size, num_players, 1]
+        
+        # 计算价值差异
+        diff = torch.abs(values - values.transpose(-2, -1))  # [batch_size, num_players, num_players]
+        
+        # 使用高斯核将差异转换为相似度
+        sigma = values.std()
+        adj = torch.exp(-diff / (2 * sigma * sigma))
+        
+        # 归一化
+        adj = F.softmax(adj, dim=-1)
+        
+        print(f"Value adjacency matrix shape: {adj.shape}")
+        return adj
+    
+    def forward(self, x, spatial_info):
         """
         前向传播
         Args:
-            x: [batch_size, temporal_win, num_players, input_dim]
-            adj_matrices: Dict[str, Tensor] 不同类型的邻接矩阵
+            x: 输入特征 [batch_size, num_players, hidden_dim]
+            spatial_info: 空间信息 [batch_size, num_players, spatial_dim]
         """
-        batch_size = x.size(0)
-        num_players = x.size(2)
-
-        # 验证输入维度
-        assert num_players > 1, f"球员数量不足：{num_players}"
+        # 打印输入维度
+        print(f"STConv input shapes:")
+        print(f"x: {x.shape}")
+        print(f"spatial_info: {spatial_info.shape}")
         
         # 1. 时间卷积
-        temporal_features = []
-        for t in range(self.temporal_win):
-            temp_feat = self.tcn(x[:, t])  # [batch_size, num_players, input_dim]
-            temporal_features.append(temp_feat)
+        x = self.tcn(x)
+        print(f"After TCN shape: {x.shape}")
         
-        # 融合时间特征
-        temporal_features = torch.stack(temporal_features, dim=1)  # [batch_size, temporal_win, num_players, input_dim]
-        temporal_features = temporal_features.mean(dim=1)  # [batch_size, num_players, input_dim]
+        # 2. 空间图卷积
+        for gtype in self.gcn_types:
+            # 构建邻接矩阵
+            if gtype == 'position':
+                adj = self._build_position_adj_matrix(spatial_info[..., :4])
+            elif gtype == 'team':
+                adj = self._build_team_adj_matrix(spatial_info[..., 4:])
+            else:  # value
+                adj = self._build_value_adj_matrix(x.mean(dim=-1))
+            
+            # 应用图注意力融合
+            x = self.gat_fusion(x, adj)
+            print(f"After {gtype} GAT fusion shape: {x.shape}")
         
-        # 投影时间特征到隐藏维度
-        temporal_features = self.temporal_proj(temporal_features)  # [batch_size, num_players, hidden_dim]
-        
-        # 2. 图注意力
-        graph_features = []
-        for gtype, adj_matrix in adj_matrices.items():
-            if gtype in self.gat_layers:
-                gat_out = self.gat_layers[gtype](temporal_features, adj_matrix)  # [batch_size, num_players, hidden_dim]
-                graph_features.append(gat_out)
-        
-        # 3. 特征融合
-        graph_features.append(temporal_features)  # 添加时间特征
-        combined_features = torch.cat(graph_features, dim=-1)  # [batch_size, num_players, hidden_dim * (num_types + 1)]
-        output = self.fusion(combined_features)  # [batch_size, num_players, hidden_dim]
-
-        # 验证输出维度
-        output = self.fusion(combined_features)
-        assert output.size(-1) == self.hidden_dim, f"STConv 输出维度错误：{output.shape}"
-        assert output.size(1) == num_players, f"球员数量不匹配：{output.shape}"
-        
-        return output 
+        return x 

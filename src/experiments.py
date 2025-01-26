@@ -13,7 +13,12 @@ from torch import optim
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
 
-from config import ExperimentConfig, PROJECT_ROOT
+from config import (
+    ExperimentConfig, 
+    PROJECT_ROOT,
+    BUDGET,
+    NUM_PLAYERS,
+)
 from environment import FPLEnv
 from models import DynamicSpatioTemporalMetaLearner
 from utils.visualization import VisualizationTool, ResultAnalyzer
@@ -33,53 +38,55 @@ class ExperimentRunner:
             config: 实验配置
         """
         print("\nDEBUG: ExperimentRunner init...")
-        print(f"Config type: {type(config)}")
-        print(f"Config dict: {config.__dict__}")
         
+        # 基础配置
         self.config = config
+        self.base_data_path = os.path.join(PROJECT_ROOT, 'data')
+        print(f"Base data path: {self.base_data_path}")
         
-        # 设置随机种子
-        torch.manual_seed(config.random_seed)
-        np.random.seed(config.random_seed)
-        random.seed(config.random_seed)
+        # 确保输出目录存在
+        os.makedirs(config.output_path, exist_ok=True)
         
-        # 检查数据路径
-        print("\nDEBUG: Checking data_path...")
-        base_data_path = os.path.join(os.getcwd(), '..', 'data')
-        print(f"Base data path: {base_data_path}")
+        # 初始化结果存储
+        self.results = {
+            'training': {},
+            'validation': {},
+            'testing': {},
+            'generalization': {}
+        }
         
-        # 使用第一个训练赛季作为初始环境
-        first_season = config.train_seasons[0]
-        data_path = os.path.join(base_data_path, first_season)
-        print(f"Full data path: {data_path}")
-        
-        # 创建环境
+        # 初始化环境
         print("\nDEBUG: Creating environment...")
-        self.env = FPLEnv(
-            data_path=data_path,
-            budget=100.0,
-            max_players=15
-        )
+        self.current_season = config.train_seasons[0]  # 初始化为第一个训练赛季
+        data_path = os.path.join(self.base_data_path, self.current_season, f"{self.current_season}_processed.csv")
+        
+        # 验证数据文件存在
+        if not os.path.exists(data_path):
+            raise FileNotFoundError(f"Data file not found: {data_path}")
+        
+        print(f"Full data path: {data_path}")
+        print(f"File exists: {os.path.exists(data_path)}")
+        
+        try:
+            self.env = FPLEnv(
+                data_path=data_path,
+                budget=BUDGET,
+                max_players=NUM_PLAYERS
+            )
+        except Exception as e:
+            print(f"Failed to create environment: {str(e)}")
+            raise
+        
+        # 获取输入维度
+        initial_state = self.env.reset()
+        input_dim = initial_state.shape[-1] if isinstance(initial_state, np.ndarray) else initial_state['player_features'].shape[-1]
+        print(f"\nDetermined input dimension: {input_dim}")
         
         # 创建模型
-        state = self.env.reset()[0]  # 获取初始状态来确定输入维度
-        input_dim = (
-            state['player_features'].shape[1] +  # 球员特征
-            state['position_onehot'].shape[1] +  # 位置独热编码
-            state['team_onehot'].shape[1]  # 球队独热编码
-        )
-        
-        print(f"\nDEBUG: Creating model...")
-        print(f"Input dimension: {input_dim}")
-        print(f"Model config: {config.model}")
-        
-        # 使用动态输入维度
-        model_config = config.model
-        model_config.input_dim = input_dim
-        
+        print("\nDEBUG: Creating model...")
         self.model = DynamicSpatioTemporalMetaLearner(
-            input_dim=model_config.input_dim,
-            hidden_dim=model_config.hidden_dim
+            input_dim=input_dim,
+            hidden_dim=config.model.hidden_dim
         ).to(config.device)
         
         # 创建优化器
@@ -94,13 +101,6 @@ class ExperimentRunner:
             config.output_path,
             'best_model.pth'
         )
-        
-        # 创建输出目录
-        os.makedirs(config.output_path, exist_ok=True)
-        
-        # 初始化结果存储
-        self.results = defaultdict(dict)
-        self.results['runs'] = []  # 添加runs列表来存储多次运行的结果
         
         # 添加可视化和分析工具
         self.visualizer = VisualizationTool(config.output_path)
@@ -132,20 +132,39 @@ class ExperimentRunner:
     
     def _evaluate_current_model(self, episode):
         """评估当前模型"""
-        self.model.eval()
-        with torch.no_grad():
-            state, _ = self.env.reset(season=self.config.val_season)
+        print(f"\nEpisode {episode}:")
+        
+        # 打印训练损失
+        if hasattr(self, 'latest_loss'):
+            for key, value in self.latest_loss.items():
+                print(f"{key}: {value:.4f}")
+        
+        # 在验证集上评估
+        try:
+            # 重置环境到验证赛季
+            state = self.env.reset(season=self.config.val_season)  # 移除对返回值的解包
+            
             total_reward = 0
             done = False
             
             while not done:
-                action = self.model.select_action(state)
-                next_state, reward, done, _, _ = self.env.step(action)
+                # 选择动作
+                action_info = self.model.select_action(state)
+                action = action_info['action']
+                
+                # 执行动作
+                next_state_info = self.env.step(action)
+                next_state = next_state_info['next_state']
+                reward = next_state_info['reward']
+                done = next_state_info['done']
+                
                 total_reward += reward
                 state = next_state
             
-            print(f"Evaluation at episode {episode}: {total_reward:.2f}")
-            self.results['evaluation'].setdefault('rewards', []).append(total_reward)
+            print(f"Validation reward: {total_reward:.2f}")
+            
+        except Exception as e:
+            print(f"Error during evaluation: {e}")
     
     def _save_results(self):
         """保存实验结果"""
@@ -195,33 +214,45 @@ class ExperimentRunner:
     def _train_model(self):
         """训练模型"""
         print("\nTraining model...")
+        progress_bar = tqdm(range(self.config.training.num_episodes))
         
-        for episode in tqdm(range(self.config.training.num_episodes)):
+        for episode in progress_bar:
             # 随机选择一个训练赛季
-            train_season = np.random.choice(self.config.train_seasons)
-            self.env.reset(season=train_season)
+            self.current_season = np.random.choice(self.config.train_seasons)
+            data_path = os.path.join(self.base_data_path, self.current_season, f"{self.current_season}_processed.csv")
             
-            # 准备赛季信息
-            season_info = self._encode_season_info(train_season)
+            # 重置环境到新的赛季
+            self.env = FPLEnv(
+                data_path=data_path,
+                budget=BUDGET,
+                max_players=NUM_PLAYERS
+            )
             
-            # 收集训练数据
-            episode_data = self._collect_episode_data(season_info)
+            # 收集经验数据
+            episode_data = self._collect_episode_data(self.current_season)
             
-            # 更新模型
-            self.model.train()
-            loss_dict = self.model.compute_loss(episode_data, season_info)
+            # 计算损失
+            loss_dict = self.model.compute_loss(episode_data, self.current_season)
             
+            # 优化器步骤
             self.optimizer.zero_grad()
             loss_dict['total_loss'].backward()
+            
+            # 梯度裁剪
+            if self.config.training.grad_clip > 0:
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(), 
+                    self.config.training.grad_clip
+                )
+            
             self.optimizer.step()
             
-            # 记录结果
-            if episode % self.config.log_interval == 0:
-                self._log_training_progress(episode, loss_dict)
-            
-            # 定期评估
-            if episode % self.config.evaluate_interval == 0:
-                self._evaluate_current_model(episode)
+            # 记录训练进度
+            self._log_training_progress(episode, {
+                'policy_loss': loss_dict['policy_loss'].item(),
+                'value_loss': loss_dict['value_loss'].item(),
+                'total_loss': loss_dict['total_loss'].item()
+            })
     
     def _evaluate_generalization(self):
         """评估模型的泛化性能"""
@@ -269,7 +300,13 @@ class ExperimentRunner:
     def _collect_episode_data(self, season_info):
         """收集单个回合的数据"""
         episode_data = []
-        state, _ = self.env.reset()
+        # 修复 reset() 返回值的处理
+        initial_state = self.env.reset()
+        if isinstance(initial_state, tuple):
+            state = initial_state[0]  # 新版本 Gym 返回 (state, info)
+        else:
+            state = initial_state  # 旧版本直接返回 state
+        
         done = False
         
         while not done:
@@ -286,12 +323,22 @@ class ExperimentRunner:
             
             # 打印调试信息
             print(f"\nEpisode data collection:")
-            print(f"state shape: {state['values'].shape}")
+            if isinstance(state, dict):
+                state_shape = state['player_features'].shape
+            else:
+                state_shape = state.shape
+            print(f"state shape: {state_shape}")
             print(f"action shape: {action.shape}")
             print(f"Selected players: {action.sum().item()}")
             
             # 执行动作
-            next_state, reward, done, _, _ = self.env.step(action)
+            next_state_info = self.env.step(action)
+            
+            # 处理返回值
+            if len(next_state_info) == 5:  # 新版本 Gym 返回 (next_state, reward, done, truncated, info)
+                next_state, reward, done, _, _ = next_state_info
+            else:  # 旧版本返回 (next_state, reward, done, info)
+                next_state, reward, done, _ = next_state_info
             
             # 存储转换
             episode_data.append({
@@ -300,7 +347,7 @@ class ExperimentRunner:
                 'log_prob': action_info['log_prob'],
                 'value': action_info['value'],
                 'reward': reward,
-                'violations': action_info['violations'],
+                'violations': action_info.get('violations', None),  # 使用 get 方法避免 KeyError
                 'next_state': next_state,
                 'done': done,
                 'season_info': season_info

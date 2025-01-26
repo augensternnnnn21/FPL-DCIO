@@ -209,53 +209,78 @@ class GeneralizationMetrics:
         
         return adaptation_rate
 
-def evaluate_generalization(model, train_seasons, test_season, env, num_episodes=10):
+def evaluate_generalization(model, train_seasons, test_season, env):
     """评估模型的泛化性能"""
-    metrics = GeneralizationMetrics()
-    results = {}
+    print("\nEvaluating generalization performance...")
     
-    # 1. 收集特征分布
-    train_features = []
-    test_features = []
-    
+    # 收集训练赛季的表现
+    train_performance = []
     for season in train_seasons:
-        state, _ = env.reset(season=season)
-        train_features.append(model.get_representation(state))
+        # 重置环境到指定赛季
+        state = env.reset(season=season)  # 移除对返回值的解包
+        
+        total_reward = 0
+        done = False
+        
+        while not done:
+            # 选择动作
+            action_info = model.select_action(state)
+            action = action_info['action']
+            
+            # 执行动作
+            next_state_info = env.step(action)
+            if isinstance(next_state_info, tuple):
+                if len(next_state_info) == 5:  # 新版本 Gym 返回 (next_state, reward, done, truncated, info)
+                    next_state, reward, done, _, _ = next_state_info
+                else:  # 旧版本返回 (next_state, reward, done, info)
+                    next_state, reward, done, _ = next_state_info
+            else:  # 字典格式
+                next_state = next_state_info['next_state']
+                reward = next_state_info['reward']
+                done = next_state_info['done']
+            
+            total_reward += reward
+            state = next_state
+        
+        train_performance.append(total_reward)
     
-    state, _ = env.reset(season=test_season)
-    test_features.append(model.get_representation(state))
+    # 在测试赛季上评估
+    state = env.reset(season=test_season)  # 移除对返回值的解包
     
-    train_features = torch.cat(train_features)
-    test_features = torch.cat(test_features)
+    total_reward = 0
+    done = False
     
-    # 2. 计算分布距离
-    results['distribution_distance'] = metrics.compute_distribution_distance(
-        train_features, test_features
-    )
+    while not done:
+        # 选择动作
+        action_info = model.select_action(state)
+        action = action_info['action']
+        
+        # 执行动作
+        next_state_info = env.step(action)
+        if isinstance(next_state_info, tuple):
+            if len(next_state_info) == 5:  # 新版本 Gym 返回 (next_state, reward, done, truncated, info)
+                next_state, reward, done, _, _ = next_state_info
+            else:  # 旧版本返回 (next_state, reward, done, info)
+                next_state, reward, done, _ = next_state_info
+        else:  # 字典格式
+            next_state = next_state_info['next_state']
+            reward = next_state_info['reward']
+            done = next_state_info['done']
+        
+        total_reward += reward
+        state = next_state
     
-    # 3. 计算鲁棒性得分
-    test_states = []
-    for _ in range(num_episodes):
-        state, _ = env.reset(season=test_season)
-        test_states.append(state)
+    # 计算泛化性指标
+    train_mean = np.mean(train_performance)
+    train_std = np.std(train_performance)
+    generalization_gap = train_mean - total_reward
     
-    results['robustness_score'] = metrics.compute_robustness_score(
-        model, test_states
-    )
-    
-    # 4. 计算适应速度
-    train_data = []
-    test_data = []
-    
-    for season in train_seasons:
-        state, _ = env.reset(season=season)
-        train_data.append(state)
-    
-    state, _ = env.reset(season=test_season)
-    test_data.append(state)
-    
-    results['adaptation_rate'] = metrics.compute_adaptation_speed(
-        model, train_data, test_data
-    )
-    
-    return results 
+    return {
+        'train_performance': {
+            'mean': train_mean,
+            'std': train_std,
+            'raw': train_performance
+        },
+        'test_performance': total_reward,
+        'generalization_gap': generalization_gap
+    } 

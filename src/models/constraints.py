@@ -77,121 +77,43 @@ class DifferentiableChecker(nn.Module):
         violation = F.relu(0.5 - value_efficiency)
         return violation * self.penalty_factors['value']
     
-    def forward(self, selections, player_data):
-        """前向传播检查所有约束"""
-        # 首先修正 selections 的维度
-        if selections.dim() == 3:
-            selections = selections.squeeze(0)  # [1, 511, 600] -> [511, 600]
-        batch_size = selections.size(0)
-        device = selections.device
-        
-        # 打印输入维度
-        print(f"\nInput shapes:")
-        print(f"selections: {selections.shape}")
-        for key, value in player_data.items():
-            if value is not None:  # 只打印非None值的形状
-                print(f"{key}: {value.shape}")
-        
-        # 处理 player_data
-        padded_player_data = {}
-        for key, value in player_data.items():
-            if value is None:  # 跳过None值
-                continue
-            
-            if key in ['position_onehot', 'team_onehot']:
-                # 处理独热编码张量
-                if value.dim() == 2:  # [num_players, features]
-                    # 确定特征数量
-                    num_features = 4 if key == 'position_onehot' else 20
-                    # 确保特征维度正确
-                    if value.size(-1) != num_features:
-                        value = value[:, :num_features]
-                    # [num_players, features] -> [1, num_players, features]
-                    value = value.unsqueeze(0)
-                
-                # 填充到目标大小
-                padded = torch.zeros(1, self.max_players, value.size(-1), device=device)
-                padded[0, :value.size(1), :] = value[0, :value.size(1), :]
-                # 扩展到 batch_size
-                padded = padded.expand(batch_size, -1, -1)
-                padded_player_data[key] = padded
-            
-            elif key == 'history':
-                # 处理历史数据 [time_steps, num_players, features]
-                if value.dim() == 3:
-                    time_steps, num_players, features = value.shape
-                    padded = torch.zeros(time_steps, self.max_players, features, device=device)
-                    padded[:, :num_players, :] = value
-                    padded_player_data[key] = padded
-            
-            else:
-                # 处理其他张量 (features, values, points等)
-                if value.dim() == 1:  # [num_players]
-                    value = value.unsqueeze(0)  # -> [1, num_players]
-                elif value.dim() == 2:  # [num_players, features]
-                    # 保持特征维度不变，只填充球员维度
-                    padded = torch.zeros(batch_size, self.max_players, value.size(-1), device=device)
-                    padded[:, :value.size(0), :] = value.unsqueeze(0).expand(batch_size, -1, -1)
-                    padded_player_data[key] = padded
-                    continue
-                
-                # 填充到目标大小 (对于1D张量)
-                padded = torch.zeros(batch_size, self.max_players, device=device)
-                padded[:, :value.size(1)] = value.expand(batch_size, -1)
-                padded_player_data[key] = padded
-        
-        # 打印填充后的维度
-        print(f"\nPadded shapes:")
-        print(f"selections: {selections.shape}")
-        for key, value in padded_player_data.items():
-            print(f"{key}: {value.shape}")
-        
-        violations = {}
+    def forward(self, state):
+        """
+        检查约束违反情况
+        Args:
+            state: 包含以下键的字典：
+                - selections: [num_players, 1] 选择的球员
+                - values: [num_players] 球员价值
+                - position_onehot: [num_players, num_positions] 位置独热编码
+                - team_onehot: [num_players, num_teams] 球队独热编码
+                - player_features: [num_players, feature_dim] 球员特征
+        """
+        selections = state['selections']
+        values = state['values']
+        position_onehot = state['position_onehot']
+        team_onehot = state['team_onehot']
         
         # 1. 预算约束
-        if 'values' in padded_player_data:  # 使用padded_player_data而不是player_data
-            values = padded_player_data['values']
-            if values.dim() == 3:  # [batch_size, num_players, 1]
-                values = values.squeeze(-1)
-            violations['budget'] = self.check_budget_constraint(selections * values)
-            print(f"Budget violation shape: {violations['budget'].shape}")
+        total_value = torch.sum(selections * values.unsqueeze(-1))
+        budget_violation = F.relu(total_value - 100.0)
         
         # 2. 位置约束
-        if 'position_onehot' in padded_player_data:
-            position_onehot = padded_player_data['position_onehot']
-            position_probs = selections.unsqueeze(-1) * position_onehot
-            violations['position'] = self.check_position_constraint(
-                position_probs,
-                torch.tensor([2, 5, 5, 3], device=device)
-            )
-            print(f"Position violation shape: {violations['position'].shape}")
+        position_counts = torch.sum(selections * position_onehot, dim=0)
+        required_counts = torch.tensor([2, 5, 5, 3], device=selections.device)  # GK, DEF, MID, FWD
+        position_violation = torch.sum(torch.abs(position_counts - required_counts))
         
         # 3. 球队约束
-        if 'team_onehot' in padded_player_data:
-            team_onehot = padded_player_data['team_onehot']
-            team_probs = selections.unsqueeze(-1) * team_onehot
-            violations['team'] = self.check_team_constraint(team_probs)
-            print(f"Team violation shape: {violations['team'].shape}")
+        team_counts = torch.sum(selections * team_onehot, dim=0)
+        team_violation = F.relu(torch.max(team_counts) - 3.0)
         
-        # 4. 价值约束
-        if all(k in padded_player_data for k in ['values', 'points']):
-            values = padded_player_data['values']
-            points = padded_player_data['points']
-            violations['value'] = self.check_value_constraint(
-                selections * values,
-                selections * points
-            )
-            print(f"Value violation shape: {violations['value'].shape}")
-        
-        # 确保所有违反项均为一维张量 [batch_size]
-        for key, value in violations.items():
-            assert value.dim() == 1, f"{key} violation has wrong dimension: {value.shape}"
-        
-        # 加权组合所有违反
-        weights = F.softmax(self.constraint_weights, dim=0)
-        total_violation = sum(w * v for w, v in zip(weights, violations.values()))
+        # 4. 总球员数约束
+        total_players = torch.sum(selections)
+        player_count_violation = torch.abs(total_players - 15.0)
         
         return {
-            'total': total_violation,
-            'details': violations
+            'budget': budget_violation,
+            'position': position_violation,
+            'team': team_violation,
+            'total_players': player_count_violation,
+            'total': budget_violation + position_violation + team_violation + player_count_violation
         } 
