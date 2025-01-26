@@ -215,62 +215,40 @@ class FPLEnv(gym.Env):
 
     def _get_state_features(self, current_data):
         """获取状态特征"""
-        print("\nDEBUG: Getting state features...")
-        print(f"Current data shape: {current_data.shape}")
-        
-        # 获取位置的独热编码
-        position_onehot = self._get_position_onehot(current_data)
-        print(f"Position onehot shape: {position_onehot.shape}")
-        
-        # 获取数值特征
-        basic_features = ['value', 'total_points', 'minutes', 'goals_scored',
-                         'assists', 'clean_sheets', 'goals_conceded']
-        numerical_features = current_data[basic_features].values
-        print(f"Numerical features shape: {numerical_features.shape}")
-        
-        # 初始化或验证 selected_players
-        print(f"\nDEBUG: Selected players info:")
-        print(f"Type: {type(self.selected_players)}")
-        print(f"Value: {self.selected_players}")
-        
-        # 确保 selected_players 是正确维度的数组
-        if isinstance(self.selected_players, (int, float, np.ndarray)):
-            # 如果是标量或者标量数组，创建新数组
-            if np.isscalar(self.selected_players) or (isinstance(self.selected_players, np.ndarray) and self.selected_players.shape == ()):
-                print("Converting scalar to array")
-                self.selected_players = np.full(len(current_data), float(self.selected_players), dtype=np.float32)
-            elif len(self.selected_players) != len(current_data):
-                print(f"Resizing array from {len(self.selected_players)} to {len(current_data)}")
-                self.selected_players = np.zeros(len(current_data), dtype=np.float32)
-        else:
-            print("Creating new array")
-            self.selected_players = np.zeros(len(current_data), dtype=np.float32)
-        
-        print(f"\nDEBUG: After processing:")
-        print(f"Selected players type: {type(self.selected_players)}")
-        print(f"Selected players shape: {self.selected_players.shape}")
-        
-        # 创建预算特征
-        budget_feature = np.full((len(current_data), 1), self.available_budget / 100.0)
-        print(f"\nDEBUG: Budget feature shape: {budget_feature.shape}")
-        
-        # 组合所有特征
         try:
+            # 检查原始value值
+            if current_data['value'].mean() > 20:  # 正常value应该在5-15之间
+                print("\nDEBUG: Value too high, adjusting scale...")
+                print(f"Original value mean: {current_data['value'].mean():.2f}")
+                current_data['value'] = current_data['value'] / 10
+                print(f"Adjusted value mean: {current_data['value'].mean():.2f}")
+            
+            # 获取位置的独热编码
+            position_onehot = self._get_position_onehot(current_data)
+            
+            # 获取数值特征
+            basic_features = ['value', 'total_points', 'minutes', 'goals_scored',
+                             'assists', 'clean_sheets', 'goals_conceded']
+            numerical_features = current_data[basic_features].values
+            
+            # 确保 selected_players 是正确维度的数组
+            if len(self.selected_players) != len(current_data):
+                self.selected_players = np.zeros(len(current_data), dtype=np.float32)
+            
+            # 创建预算特征
+            budget_feature = np.full((len(current_data), 1), self.available_budget / 100.0)
+            
+            # 组合所有特征
             state = np.concatenate([
                 position_onehot,
                 numerical_features,
                 self.selected_players.reshape(-1, 1),
                 budget_feature
             ], axis=1)
-            print(f"\nDEBUG: Final state shape: {state.shape}")
+            
             return state
         except Exception as e:
-            print(f"\nERROR: Failed to concatenate features:")
-            print(f"Position onehot: {position_onehot.shape}")
-            print(f"Numerical features: {numerical_features.shape}")
-            print(f"Selected players: {self.selected_players.shape}")
-            print(f"Budget feature: {budget_feature.shape}")
-            print(f"Error: {str(e)}")
+            print(f"Error in _get_state_features: {str(e)}")
             raise
     
     def _get_position_onehot(self, data):
@@ -423,12 +401,12 @@ class FPLEnv(gym.Env):
             selected_values = current_data['value'].values * action
             total_value = np.sum(selected_values)
             if total_value > self.budget:
-                penalties += (total_value - self.budget) * 10
+                penalties += (total_value - self.budget) * 0.5
             
             # 球员数量约束
             num_selected = np.sum(action)
             if num_selected != self.max_players:
-                penalties += abs(num_selected - self.max_players) * 50
+                penalties += abs(num_selected - self.max_players) * 5
             
             # 位置约束
             position_counts = {
@@ -440,31 +418,28 @@ class FPLEnv(gym.Env):
             
             # 检查位置约束
             if position_counts['GK'] != 2:
-                penalties += abs(2 - position_counts['GK']) * 30
-            if not (3 <= position_counts['DEF'] <= 5):
-                penalties += 30
-            if not (3 <= position_counts['MID'] <= 5):
-                penalties += 30
-            if not (1 <= position_counts['FWD'] <= 3):
-                penalties += 30
+                penalties += abs(2 - position_counts['GK']) * 2
+            if position_counts['DEF'] != 5:
+                penalties += abs(5 - position_counts['DEF']) * 2
+            if position_counts['MID'] != 5:
+                penalties += abs(5 - position_counts['MID']) * 2
+            if position_counts['FWD'] != 3:
+                penalties += abs(3 - position_counts['FWD']) * 2
             
             # 最终奖励
             reward = total_points - penalties
             
-            # 添加调试信息
+            # 只在违反约束时打印调试信息
             if penalties > 0:
-                print(f"\nDEBUG: Reward breakdown:")
-                print(f"Total points: {total_points}")
-                print(f"Penalties: {penalties}")
-                print(f"Final reward: {reward}")
+                print(f"\nDEBUG: Constraint violation:")
+                print(f"Total points: {total_points:.1f}")
+                print(f"Penalties: {penalties:.1f}")
                 print(f"Position counts: {position_counts}")
-                print(f"Total value: {total_value}")
+                print(f"Total value: {total_value:.1f}")
                 print(f"Players selected: {num_selected}")
             
             return reward
             
         except Exception as e:
             print(f"Error calculating reward: {str(e)}")
-            print(f"Action shape: {action.shape}")
-            print(f"Current data shape: {current_data.shape}")
             raise

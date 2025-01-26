@@ -144,25 +144,98 @@ class DilatedTCN(nn.Module):
             features = self.feature_pooling(features)  # [batch_size, hidden_dim, 1]
             features = features.squeeze(-1)  # [batch_size, hidden_dim]
             
-            # 生成动作概率
-            action_probs = torch.sigmoid(self.action_head(features))
+            # 获取位置信息
+            position_onehot = state['position_onehot']  # [seq_len, 4]
+            values = state['raw_features']['values']
+            num_players = position_onehot.size(0)
             
-            # 添加探索
-            if self.training:
-                epsilon = 0.1  # 可以随训练进度衰减
-                if random.random() < epsilon:
-                    action = torch.rand_like(action_probs)
-                else:
-                    action = (action_probs > 0.5).float()
-            else:
-                action = (action_probs > 0.5).float()
+            # 确保 position_onehot 是正确的形状
+            if len(position_onehot.shape) == 2:
+                position_onehot = position_onehot.unsqueeze(0)  # [1, seq_len, 4]
+            
+            # 为每个球员生成动作概率
+            action_probs = []
+            for i in range(num_players):
+                player_features = features.clone()  # [batch_size, hidden_dim]
+                # 生成该球员的动作概率
+                prob = torch.sigmoid(self.action_head(player_features))  # [batch_size, 1]
+                action_probs.append(prob)
+            
+            # 组合所有球员的概率
+            action_probs = torch.cat(action_probs, dim=1)  # [batch_size, num_players]
+            
+            # 创建掩码来满足约束
+            batch_size = position_onehot.size(0)
+            
+            # 初始化动作
+            action = torch.zeros_like(action_probs)
+            
+            # 获取每个位置的球员索引
+            gk_mask = position_onehot[..., 0] == 1  # GK
+            def_mask = position_onehot[..., 1] == 1  # DEF
+            mid_mask = position_onehot[..., 2] == 1  # MID
+            fwd_mask = position_onehot[..., 3] == 1  # FWD
+            
+            # 打印调试信息
+            print(f"\nDEBUG: Shapes:")
+            print(f"action_probs: {action_probs.shape}")
+            print(f"position_onehot: {position_onehot.shape}")
+            print(f"gk_mask: {gk_mask.shape}")
+            
+            print(f"\nDEBUG: Position counts:")
+            print(f"GK count: {gk_mask.sum().item()}")
+            print(f"DEF count: {def_mask.sum().item()}")
+            print(f"MID count: {mid_mask.sum().item()}")
+            print(f"FWD count: {fwd_mask.sum().item()}")
+            
+            # 按照概率排序选择球员
+            for b in range(batch_size):
+                # 选择2名门将
+                gk_probs = action_probs[b][gk_mask[b]]
+                if len(gk_probs) >= 2:  # 确保有足够的门将可选
+                    gk_indices = torch.argsort(gk_probs, descending=True)[:2]
+                    gk_positions = torch.where(gk_mask[b])[0]
+                    action[b][gk_positions[gk_indices]] = 1
+                
+                # 选择5名后卫
+                def_probs = action_probs[b][def_mask[b]]
+                if len(def_probs) >= 5:  # 确保有足够的后卫可选
+                    def_indices = torch.argsort(def_probs, descending=True)[:5]
+                    def_positions = torch.where(def_mask[b])[0]
+                    action[b][def_positions[def_indices]] = 1
+                
+                # 选择5名中场
+                mid_probs = action_probs[b][mid_mask[b]]
+                if len(mid_probs) >= 5:  # 确保有足够的中场可选
+                    mid_indices = torch.argsort(mid_probs, descending=True)[:5]
+                    mid_positions = torch.where(mid_mask[b])[0]
+                    action[b][mid_positions[mid_indices]] = 1
+                
+                # 选择3名前锋
+                fwd_probs = action_probs[b][fwd_mask[b]]
+                if len(fwd_probs) >= 3:  # 确保有足够的前锋可选
+                    fwd_indices = torch.argsort(fwd_probs, descending=True)[:3]
+                    fwd_positions = torch.where(fwd_mask[b])[0]
+                    action[b][fwd_positions[fwd_indices]] = 1
+            
+            # 打印选择结果
+            print(f"\nDEBUG: Selection results:")
+            print(f"Total selected: {action.sum().item()}")
+            print(f"Selected by position:")
+            for b in range(batch_size):
+                print(f"Batch {b}:")
+                print(f"GK: {(action[b] * gk_mask[b]).sum().item()}")
+                print(f"DEF: {(action[b] * def_mask[b]).sum().item()}")
+                print(f"MID: {(action[b] * mid_mask[b]).sum().item()}")
+                print(f"FWD: {(action[b] * fwd_mask[b]).sum().item()}")
             
             return action.detach()
             
         except Exception as e:
             print(f"Error in select_action: {str(e)}")
             print(f"State shape before forward: {state['player_features'].shape}")
-            print(f"Input shape: {state['player_features'].shape}")
+            print(f"Position onehot shape: {state['position_onehot'].shape}")
+            print(f"Action probs shape: {action_probs.shape if 'action_probs' in locals() else 'Not created'}")
             raise
     
     def get_representation(self, state):

@@ -427,14 +427,26 @@ class ExperimentRunner:
             if not done:
                 state = next_state
         
-        # 返回收集的数据
-        return {
-            'states': np.array(states, dtype=object),
-            'actions': np.array(actions),
-            'rewards': np.array(rewards),
-            'next_states': np.array(next_states, dtype=object),
-            'dones': np.array(dones)
-        }
+        try:
+            # 确保所有动作数组具有相同的形状
+            actions = []
+            for action in actions:
+                # 将动作转换为二维数组 [1, num_players]
+                if len(action.shape) == 1:
+                    action = action.reshape(1, -1)
+                actions.append(action)
+            
+            return {
+                'states': np.array(states, dtype=object),
+                'actions': np.array(actions),  # 现在所有动作都是二维的
+                'rewards': np.array(rewards),
+                'next_states': np.array(next_states, dtype=object),
+                'dones': np.array(dones)
+            }
+        except Exception as e:
+            print(f"Error in _collect_episode_data: {str(e)}")
+            print(f"Actions shapes: {[a.shape for a in actions]}")
+            raise
     
     def _visualize_results(self):
         """可视化实验结果"""
