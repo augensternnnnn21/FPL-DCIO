@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 class DilatedTCN(nn.Module):
     """带有扩张的时间卷积网络"""
@@ -19,7 +20,7 @@ class DilatedTCN(nn.Module):
         self.use_attention = use_attention
         self.bidirectional = bidirectional
         
-        # 输入投影层
+        # 修改输入投影层
         self.input_proj = nn.Linear(input_dim, hidden_dim)
         
         # 时序卷积层
@@ -37,28 +38,56 @@ class DilatedTCN(nn.Module):
         
         # 输出层
         self.output_dim = hidden_dim * 2 if bidirectional else hidden_dim
-        self.output_layer = nn.Linear(self.output_dim, 1)
+        self.output_layer = nn.Linear(self.output_dim, hidden_dim)
         
         # 修改动作头和值函数头的输入维度
-        self.feature_pooling = nn.AdaptiveAvgPool1d(1)  # 添加全局池化层
+        self.feature_pooling = nn.AdaptiveAvgPool1d(1)
         
         self.action_head = nn.Sequential(
-            nn.Linear(self.output_dim, hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, 1)
         )
         
         self.value_head = nn.Sequential(
-            nn.Linear(self.output_dim, hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, 1)
         )
         
     def forward(self, x):
-        # 输入形状: [batch_size, seq_len, input_dim]
-        batch_size, seq_len, _ = x.shape
+        """
+        前向传播
+        Args:
+            x: 输入数据，可能的形状:
+               - [seq_len, feature_dim] 或 [feature_dim, seq_len]
+               - [batch_size, seq_len, feature_dim]
+        """
+        # 打印输入形状以便调试
+        print(f"Input shape: {x.shape}")
+        
+        # 确保输入是3D张量
+        if len(x.shape) == 2:
+            # 确保第二个维度是特征维度
+            if x.shape[1] != self.input_dim and x.shape[0] != self.input_dim:
+                # 如果两个维度都不匹配，则需要调整特征维度
+                x = x[:, :self.input_dim] if x.shape[1] > self.input_dim else F.pad(x, (0, self.input_dim - x.shape[1]))
+            
+            # 如果第一个维度是特征维度，则转置
+            if x.shape[0] == self.input_dim:
+                x = x.t()
+            
+            x = x.unsqueeze(0)  # 添加批次维度 [1, seq_len, feature_dim]
+        
+        # 如果是3D张量，确保最后一个维度是特征维度
+        else:
+            if x.shape[-1] != self.input_dim:
+                x = x[..., :self.input_dim] if x.shape[-1] > self.input_dim else F.pad(x, (0, self.input_dim - x.shape[-1]))
+        
+        # 再次打印形状以确认转换结果
+        print(f"After reshape: {x.shape}")
         
         # 输入投影
         x = self.input_proj(x)  # [batch_size, seq_len, hidden_dim]
@@ -68,6 +97,8 @@ class DilatedTCN(nn.Module):
         
         # 应用卷积层
         for conv in self.conv_layers:
+            padding = conv.dilation[0] * (conv.kernel_size[0] - 1)
+            x = F.pad(x, (padding, 0))  # 添加填充以保持序列长度
             x = conv(x)
             x = torch.relu(x)
             x = self.dropout(x)
@@ -86,10 +117,9 @@ class DilatedTCN(nn.Module):
             x = torch.cat([forward, backward], dim=-1)
         
         # 输出层
-        x = self.output_layer(x)  # [batch_size, seq_len, 1]
-        x = torch.sigmoid(x)
+        x = self.output_layer(x)  # [batch_size, seq_len, hidden_dim]
         
-        return x.squeeze(-1)  # [batch_size, seq_len]
+        return x
 
     def select_action(self, state):
         """选择动作"""
@@ -99,27 +129,27 @@ class DilatedTCN(nn.Module):
         if not isinstance(state, torch.Tensor):
             state = torch.FloatTensor(state)
         
-        # 添加批次维度（如果需要）
-        if len(state.shape) == 2:
-            state = state.unsqueeze(0)
+        # 打印输入状态的形状
+        print(f"State shape before forward: {state.shape}")
         
         # 获取特征表示
-        features = self.forward(state)  # [batch_size, seq_len, output_dim]
+        features = self.forward(state)  # [batch_size, seq_len, hidden_dim]
+        print(f"Features shape after forward: {features.shape}")
         
         # 全局池化得到固定维度的特征
-        features = features.transpose(1, 2)  # [batch_size, output_dim, seq_len]
-        features = self.feature_pooling(features)  # [batch_size, output_dim, 1]
-        features = features.squeeze(-1)  # [batch_size, output_dim]
+        pooled_features = features.mean(dim=1)  # [batch_size, hidden_dim]
+        print(f"Pooled features shape: {pooled_features.shape}")
         
         # 计算动作概率和状态值
-        action_probs = torch.sigmoid(self.action_head(features))
-        value = self.value_head(features)
+        action_probs = torch.sigmoid(self.action_head(pooled_features))
+        value = self.value_head(pooled_features)
         
         # 采样动作
         action = (action_probs > 0.5).float()
         
+        # 确保返回numpy数组
         return {
-            'action': action.squeeze().detach().cpu().numpy(),
+            'action': action.squeeze().detach().cpu().numpy().astype(np.float32),
             'action_probs': action_probs.squeeze().detach().cpu().numpy(),
             'value': value.squeeze().detach().cpu().numpy()
         }
@@ -135,35 +165,33 @@ class DilatedTCN(nn.Module):
             
         return self.forward(state)
     
-    def compute_loss(self, episode_data, current_season):
+    def compute_loss(self, episode_data, season):
         """计算损失"""
-        states = torch.FloatTensor(episode_data['states'])
-        actions = torch.FloatTensor(episode_data['actions'])
-        rewards = torch.FloatTensor(episode_data['rewards'])
+        # 转换状态为张量
+        states = episode_data['states']
+        actions = torch.FloatTensor(episode_data['actions']).to(self.device)
+        rewards = torch.FloatTensor(episode_data['rewards']).to(self.device)
+        next_states = episode_data['next_states']
+        dones = torch.FloatTensor(episode_data['dones']).to(self.device)
         
-        # 获取特征表示
-        features = self.forward(states)  # [batch_size, seq_len, output_dim]
+        # 处理状态和下一个状态
+        state_features = torch.FloatTensor(np.stack([s['player_features'] for s in states])).to(self.device)
+        next_state_features = torch.FloatTensor(np.stack([s['player_features'] for s in next_states])).to(self.device)
         
-        # 全局池化
-        features = features.transpose(1, 2)  # [batch_size, output_dim, seq_len]
-        features = self.feature_pooling(features)  # [batch_size, output_dim, 1]
-        features = features.squeeze(-1)  # [batch_size, output_dim]
+        # 计算当前Q值
+        current_q = self.forward(state_features)
         
-        # 计算预测值
-        action_probs = torch.sigmoid(self.action_head(features))
-        values = self.value_head(features)
+        # 计算目标Q值
+        with torch.no_grad():
+            next_q = self.forward(next_state_features)
+            target_q = rewards + (1 - dones) * self.gamma * next_q
         
         # 计算损失
-        policy_loss = F.binary_cross_entropy(action_probs, actions)
-        value_loss = F.mse_loss(values.squeeze(), rewards)
-        
-        # 总损失
-        total_loss = policy_loss + 0.5 * value_loss
+        loss = self.criterion(current_q, target_q)
         
         return {
-            'policy_loss': policy_loss,
-            'value_loss': value_loss,
-            'total_loss': total_loss
+            'loss': loss.item(),
+            'avg_reward': rewards.mean().item()
         }
 
 class GATFusion(nn.Module):

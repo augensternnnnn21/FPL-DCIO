@@ -368,65 +368,68 @@ class ExperimentRunner:
             np.cos(year_rad)
         ], device=self.config.device)
     
-    def _collect_episode_data(self, season_info):
-        """收集单个回合的数据"""
-        episode_data = []
-        # 修复 reset() 返回值的处理
-        initial_state = self.env.reset()
-        if isinstance(initial_state, tuple):
-            state = initial_state[0]  # 新版本 Gym 返回 (state, info)
-        else:
-            state = initial_state  # 旧版本直接返回 state
+    def _collect_episode_data(self, season):
+        """收集一个回合的数据"""
+        states = []
+        actions = []
+        rewards = []
+        next_states = []
+        dones = []
         
+        # 重置环境
+        state = self.env.reset(season)
         done = False
         
         while not done:
-            # 选择动作
-            action_info = self.model.select_action(state)
-            action = action_info['action']  # [batch_size, num_players]
-            
-            # 确保动作是布尔张量
-            action = action.bool()
-            
-            # 如果是批处理，只取第一个
-            if action.dim() > 1 and action.size(0) > 1:
-                action = action[0]
-            
-            # 打印调试信息
-            print(f"\nEpisode data collection:")
-            if isinstance(state, dict):
-                state_shape = state['player_features'].shape
-            else:
-                state_shape = state.shape
-            print(f"state shape: {state_shape}")
-            print(f"action shape: {action.shape}")
-            print(f"Selected players: {action.sum().item()}")
+            # 获取动作
+            action = self.model.select_action(state)
             
             # 执行动作
-            next_state_info = self.env.step(action)
+            next_state, reward, done, _ = self.env.step(action)
             
-            # 处理返回值
-            if len(next_state_info) == 5:  # 新版本 Gym 返回 (next_state, reward, done, truncated, info)
-                next_state, reward, done, _, _ = next_state_info
-            else:  # 旧版本返回 (next_state, reward, done, info)
-                next_state, reward, done, _ = next_state_info
+            # 转换状态为张量
+            state_tensor = {
+                'player_features': state['player_features'].detach().cpu().numpy(),
+                'position_onehot': state['position_onehot'].detach().cpu().numpy(),
+                'team_onehot': state['team_onehot'].detach().cpu().numpy(),
+                'gameweek': state['gameweek'],
+                'raw_features': {
+                    'values': state['raw_features']['values'].detach().cpu().numpy(),
+                    'total_points': state['raw_features']['total_points'].detach().cpu().numpy(),
+                    'names': state['raw_features']['names']
+                }
+            }
+            
+            next_state_tensor = {
+                'player_features': next_state['player_features'].detach().cpu().numpy(),
+                'position_onehot': next_state['position_onehot'].detach().cpu().numpy(),
+                'team_onehot': next_state['team_onehot'].detach().cpu().numpy(),
+                'gameweek': next_state['gameweek'],
+                'raw_features': {
+                    'values': next_state['raw_features']['values'].detach().cpu().numpy(),
+                    'total_points': next_state['raw_features']['total_points'].detach().cpu().numpy(),
+                    'names': next_state['raw_features']['names']
+                }
+            }
             
             # 存储转换
-            episode_data.append({
-                'state': state,
-                'action': action,
-                'log_prob': action_info['log_prob'],
-                'value': action_info['value'],
-                'reward': reward,
-                'violations': action_info.get('violations', None),  # 使用 get 方法避免 KeyError
-                'next_state': next_state,
-                'done': done,
-                'season_info': season_info
-            })
+            states.append(state_tensor)
+            actions.append(action.detach().cpu().numpy())
+            rewards.append(reward)
+            next_states.append(next_state_tensor)
+            dones.append(done)
             
+            # 更新状态
             state = next_state
         
-        return episode_data
+        # 返回收集的数据
+        return {
+            'states': np.array(states, dtype=object),  # 使用 object 类型存储字典
+            'actions': np.array(actions),
+            'rewards': np.array(rewards),
+            'next_states': np.array(next_states, dtype=object),  # 使用 object 类型存储字典
+            'dones': np.array(dones)
+        }
     
     def _visualize_results(self):
         """可视化实验结果"""
