@@ -20,46 +20,22 @@ class FPLDataLoader:
             raise FileNotFoundError(f"球队数据文件不存在: {self.teams_path}")
     
     def load_data(self, season: str = None) -> pd.DataFrame:
-        """加载数据"""
+        """加载数据并预处理"""
         try:
-            # 加载数据
-            df = pd.read_csv(self.seasons_path, low_memory=False)
-            print(f"✅ 成功加载赛季数据，共 {len(df)} 条记录")
+            # 加载原始数据
+            data = pd.read_csv(self.seasons_path, low_memory=False)
             
             # 如果指定了赛季，筛选数据
             if season:
-                # 打印所有可用的赛季
-                available_seasons = df['season_x'].unique()
-                print(f"可用赛季: {available_seasons}")
+                season_data = data[data['season_x'] == season]
                 
-                # 尝试精确匹配
-                season_data = df[df['season_x'] == season]
+                # 处理value值（除以10转换为实际价值）
+                if 'value' in season_data.columns:
+                    season_data['value'] = season_data['value'] / 10.0
                 
-                # 如果没有找到，尝试模糊匹配
-                if len(season_data) == 0:
-                    season_data = df[df['season_x'].str.contains(season, na=False)]
-                
-                print(f"✅ 筛选 {season} 赛季数据，共 {len(season_data)} 条记录")
-                
-                # 如果仍然没有找到数据，使用最近的赛季
-                if len(season_data) == 0:
-                    print(f"⚠️ 警告: 未找到 {season} 赛季的数据")
-                    # 按年份排序赛季
-                    sorted_seasons = sorted(available_seasons, 
-                                         key=lambda x: int(x.split('-')[0]))
-                    # 找到最接近的赛季
-                    target_year = int(season.split('-')[0])
-                    closest_season = min(sorted_seasons, 
-                                       key=lambda x: abs(int(x.split('-')[0]) - target_year))
-                    print(f"使用最接近的赛季 {closest_season} 作为替代")
-                    season_data = df[df['season_x'] == closest_season]
-                
-                if len(season_data) == 0:
-                    raise ValueError(f"无法找到有效的赛季数据")
-                    
                 return season_data
             
-            return df
+            return data
             
         except Exception as e:
             print(f"❌ 数据加载失败: {str(e)}")

@@ -13,6 +13,7 @@ from torch import optim
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
 from pathlib import Path
+import time
 
 from config import (
     ExperimentConfig, 
@@ -274,24 +275,23 @@ class ExperimentRunner:
     
     def _train_model(self):
         """训练模型"""
-        print("\nTraining model...")
+        print("\n[训练日志] 项目名称: FPL阵容优化模型")
+        print("模型架构: DynamicSpatioTemporalMetaLearner")
+        print(f"训练设备: {self.config.device}")
+        print(f"训练日期: {datetime.now().strftime('%Y-%m-%d')}")
+        print("\n超参数配置:")
+        print(f"  - 学习率: {self.config.learning_rate}")
+        print(f"  - 折扣因子 (gamma): {self.config.gamma}")
+        print(f"  - 批次大小: {self.config.batch_size}")
+        print("\nEpisode | 总步数 | 累计奖励 | 平均奖励 | 约束违反率 | 损失 (Policy/Value/Total) | 训练时间 (s)")
+        print("-" * 100)
+        
         progress_bar = tqdm(range(self.config.num_episodes))
+        episode_start_time = time.time()
         
         for episode in progress_bar:
             # 随机选择一个训练赛季
             self.current_season = np.random.choice(self.config.train_seasons)
-            
-            # 创建环境配置
-            env_config = ExperimentConfig(
-                data_path=str(os.path.join(self.base_data_path, self.current_season, f"{self.current_season}_processed.csv")),
-                train_seasons=self.config.train_seasons,
-                val_season=self.config.val_season,
-                test_season=self.config.test_season,
-                budget=self.config.budget,
-                max_players=self.config.max_players
-            )
-            
-            self.env = FPLEnv(env_config)
             
             # 收集经验数据
             episode_data = self._collect_episode_data(self.current_season)
@@ -301,28 +301,20 @@ class ExperimentRunner:
             
             # 优化器步骤
             self.optimizer.zero_grad()
-            
-            # 确保损失是标量
-            if isinstance(loss_dict['total_loss'], torch.Tensor):
-                loss_dict['total_loss'].backward()
-            else:
-                print(f"Warning: total_loss is not a tensor: {type(loss_dict['total_loss'])}")
-                continue
-            
-            # 梯度裁剪
-            grad_clip = 1.0
-            if grad_clip > 0:
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), grad_clip)
-            
+            loss_dict['total_loss'].backward()
             self.optimizer.step()
             
-            # 记录训练进度
-            self._log_training_progress(episode, {
-                'policy_loss': loss_dict['policy_loss'].item(),
-                'value_loss': loss_dict['value_loss'].item(),
-                'total_loss': loss_dict['total_loss'].item(),
-                'avg_reward': loss_dict['avg_reward']
-            })
+            # 计算训练时间
+            episode_time = time.time() - episode_start_time
+            
+            # 打印训练日志
+            print(f"{episode:7d} | {len(episode_data['rewards']):6d} | {episode_data['total_reward']:8.1f} | "
+                  f"{episode_data['total_reward']/len(episode_data['rewards']):8.2f} | "
+                  f"{episode_data['constraint_violations']/len(episode_data['rewards']):11.2f} | "
+                  f"{loss_dict['policy_loss']:.2f} / {loss_dict['value_loss']:.2f} / {loss_dict['total_loss']:.2f} | "
+                  f"{episode_time:11.1f}")
+            
+            episode_start_time = time.time()
     
     def _evaluate_generalization(self):
         """评估模型的泛化性能"""
@@ -374,6 +366,7 @@ class ExperimentRunner:
         rewards = []
         next_states = []
         dones = []
+        total_value = 0
         
         # 重置环境
         state = self.env.reset(season)
@@ -384,43 +377,26 @@ class ExperimentRunner:
             action = self.model.select_action(state)
             
             # 执行动作
-            next_state, reward, done, _ = self.env.step(action)
+            next_state, reward, done, info = self.env.step(action)
             
-            # 存储当前状态
-            state_dict = {
-                'player_features': state['player_features'].detach().cpu().numpy(),
-                'position_onehot': state['position_onehot'].detach().cpu().numpy(),
-                'team_onehot': state['team_onehot'].detach().cpu().numpy(),
-                'gameweek': state['gameweek'],
-                'raw_features': {
-                    'values': state['raw_features']['values'].detach().cpu().numpy(),
-                    'total_points': state['raw_features']['total_points'].detach().cpu().numpy(),
-                    'names': state['raw_features']['names']
-                }
-            }
-            
-            # 存储下一个状态（如果不是终止状态）
-            if next_state is not None:
-                next_state_dict = {
-                    'player_features': next_state['player_features'].detach().cpu().numpy(),
-                    'position_onehot': next_state['position_onehot'].detach().cpu().numpy(),
-                    'team_onehot': next_state['team_onehot'].detach().cpu().numpy(),
-                    'gameweek': next_state['gameweek'],
-                    'raw_features': {
-                        'values': next_state['raw_features']['values'].detach().cpu().numpy(),
-                        'total_points': next_state['raw_features']['total_points'].detach().cpu().numpy(),
-                        'names': next_state['raw_features']['names']
-                    }
-                }
+            # 计算当前选择的球员总价值
+            if isinstance(state['raw_features']['values'], torch.Tensor):
+                values = state['raw_features']['values'].cpu().numpy()
             else:
-                # 如果是终止状态，使用当前状态作为下一个状态
-                next_state_dict = state_dict.copy()
+                values = state['raw_features']['values']
+            
+            if isinstance(action, torch.Tensor):
+                action_np = action.cpu().numpy()
+            else:
+                action_np = action
+            
+            total_value = np.sum(values * action_np)
             
             # 存储转换
-            states.append(state_dict)
-            actions.append(action.cpu().numpy())
+            states.append(state)
+            actions.append(action_np.flatten())  # 确保动作是一维数组
             rewards.append(reward)
-            next_states.append(next_state_dict)
+            next_states.append(next_state)
             dones.append(done)
             
             # 更新状态
@@ -428,20 +404,15 @@ class ExperimentRunner:
                 state = next_state
         
         try:
-            # 确保所有动作数组具有相同的形状
-            actions = []
-            for action in actions:
-                # 将动作转换为二维数组 [1, num_players]
-                if len(action.shape) == 1:
-                    action = action.reshape(1, -1)
-                actions.append(action)
-            
             return {
                 'states': np.array(states, dtype=object),
-                'actions': np.array(actions),  # 现在所有动作都是二维的
+                'actions': np.stack(actions),  # 使用 stack 而不是 array
                 'rewards': np.array(rewards),
                 'next_states': np.array(next_states, dtype=object),
-                'dones': np.array(dones)
+                'dones': np.array(dones),
+                'total_value': total_value,
+                'total_reward': np.sum(rewards),
+                'constraint_violations': info['constraint_violations']
             }
         except Exception as e:
             print(f"Error in _collect_episode_data: {str(e)}")

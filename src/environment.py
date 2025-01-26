@@ -150,7 +150,7 @@ class FPLEnv(gym.Env):
             self.selected_players = action.astype(np.float32)  # 确保是 float32 类型
             
             # 计算奖励
-            reward = self._calculate_reward(action, current_data)
+            reward, info = self._calculate_reward(action, current_data)
             
             # 更新比赛周
             self.current_gameweek += 1
@@ -173,7 +173,7 @@ class FPLEnv(gym.Env):
             else:
                 next_state = None
             
-            return next_state, reward, done, {}
+            return next_state, reward, done, info
             
         except Exception as e:
             print(f"Error in step: {str(e)}")
@@ -216,13 +216,6 @@ class FPLEnv(gym.Env):
     def _get_state_features(self, current_data):
         """获取状态特征"""
         try:
-            # 检查原始value值
-            if current_data['value'].mean() > 20:  # 正常value应该在5-15之间
-                print("\nDEBUG: Value too high, adjusting scale...")
-                print(f"Original value mean: {current_data['value'].mean():.2f}")
-                current_data['value'] = current_data['value'] / 10
-                print(f"Adjusted value mean: {current_data['value'].mean():.2f}")
-            
             # 获取位置的独热编码
             position_onehot = self._get_position_onehot(current_data)
             
@@ -236,7 +229,7 @@ class FPLEnv(gym.Env):
                 self.selected_players = np.zeros(len(current_data), dtype=np.float32)
             
             # 创建预算特征
-            budget_feature = np.full((len(current_data), 1), self.available_budget / 100.0)
+            budget_feature = np.full((len(current_data), 1), self.available_budget)
             
             # 组合所有特征
             state = np.concatenate([
@@ -396,17 +389,20 @@ class FPLEnv(gym.Env):
             
             # 计算约束违反惩罚
             penalties = 0
+            constraint_violations = 0
             
             # 预算约束
             selected_values = current_data['value'].values * action
             total_value = np.sum(selected_values)
             if total_value > self.budget:
                 penalties += (total_value - self.budget) * 0.5
+                constraint_violations += 1
             
             # 球员数量约束
             num_selected = np.sum(action)
             if num_selected != self.max_players:
                 penalties += abs(num_selected - self.max_players) * 5
+                constraint_violations += 1
             
             # 位置约束
             position_counts = {
@@ -417,28 +413,37 @@ class FPLEnv(gym.Env):
             }
             
             # 检查位置约束
+            position_violations = 0
             if position_counts['GK'] != 2:
                 penalties += abs(2 - position_counts['GK']) * 2
+                position_violations += 1
             if position_counts['DEF'] != 5:
                 penalties += abs(5 - position_counts['DEF']) * 2
+                position_violations += 1
             if position_counts['MID'] != 5:
                 penalties += abs(5 - position_counts['MID']) * 2
+                position_violations += 1
             if position_counts['FWD'] != 3:
                 penalties += abs(3 - position_counts['FWD']) * 2
+                position_violations += 1
+            
+            if position_violations > 0:
+                constraint_violations += 1
             
             # 最终奖励
             reward = total_points - penalties
             
-            # 只在违反约束时打印调试信息
-            if penalties > 0:
-                print(f"\nDEBUG: Constraint violation:")
-                print(f"Total points: {total_points:.1f}")
-                print(f"Penalties: {penalties:.1f}")
-                print(f"Position counts: {position_counts}")
-                print(f"Total value: {total_value:.1f}")
-                print(f"Players selected: {num_selected}")
+            # 返回详细信息
+            info = {
+                'points': total_points,
+                'value': total_value,
+                'budget': self.budget,
+                'penalties': penalties,
+                'constraint_violations': constraint_violations,
+                'total_reward': reward
+            }
             
-            return reward
+            return reward, info
             
         except Exception as e:
             print(f"Error calculating reward: {str(e)}")
