@@ -10,19 +10,18 @@ from config import ExperimentConfig
 
 from data.data_loader import FPLDataLoader
 from data.preprocessor import FPLPreprocessor
-from models.differentiable_constraints import DifferentiableChecker
-from models.st_conv import DilatedTCN
 
 
 class FPLEnv(gym.Env):
     """FPL环境"""
-    def __init__(self, config: ExperimentConfig):
+    def __init__(self, config):
         super().__init__()
         
         # 直接使用具体的文件路径
-        base_dir = Path("/Users/zhangyufei/Desktop/FPL-DCIO/data")
-        self.seasons_file = base_dir / "cleaned_merged_seasons.csv"
-        self.teams_file = base_dir / "master_team_list.csv"
+        self.base_dir = Path(config.data_path)
+        # 修改这里：直接使用基础目录下的文件
+        self.seasons_file = self.base_dir / "cleaned_merged_seasons.csv"
+        self.teams_file = self.base_dir / "master_team_list.csv"
         
         print(f"\n初始化环境")
         print(f"📄 赛季数据文件: {self.seasons_file}")
@@ -49,7 +48,6 @@ class FPLEnv(gym.Env):
         
         # 初始化组件
         self.preprocessor = FPLPreprocessor()
-        self.constraint_checker = DifferentiableChecker(config.budget, config.max_players)
         
         # 加载和预处理数据
         try:
@@ -70,7 +68,7 @@ class FPLEnv(gym.Env):
         # 重置环境
         self.reset()
         
-        # 特殊卡片标记（例：三倍队长、Bench Boost等）
+        # 特殊卡片标记
         self.special_cards = {
             'triple_captain': False,
             'bench_boost': False

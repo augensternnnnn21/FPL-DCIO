@@ -1,14 +1,17 @@
 #!/bin/bash
 
 # 设置项目根目录
-export PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-echo "DEBUG: Initial PROJECT_ROOT: $PROJECT_ROOT"
+export PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../" && pwd)"
+echo "DEBUG: PROJECT_ROOT: $PROJECT_ROOT"
 
 # 激活Python环境（如果需要）
 # source $PROJECT_ROOT/venv/bin/activate
 
 # 设置PYTHONPATH
 export PYTHONPATH=$PROJECT_ROOT:$PYTHONPATH
+
+# 创建输出目录
+mkdir -p "$PROJECT_ROOT/experiments"
 
 # 运行实验
 python3 $PROJECT_ROOT/src/run_experiment.py \

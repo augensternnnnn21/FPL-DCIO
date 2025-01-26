@@ -1,7 +1,7 @@
 import os
 import torch
 from dataclasses import dataclass, field, fields
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import warnings
 
 # 项目根目录
@@ -52,29 +52,22 @@ class GeneralizationConfig:
 @dataclass
 class ExperimentConfig:
     """实验配置"""
-    # 数据相关
     data_path: str
-    train_seasons: List[str]
-    val_season: str
-    test_season: str
-    
-    # 环境相关
+    output_path: str
     budget: float = 100.0
     max_players: int = 15
-    
-    # 训练相关
     num_episodes: int = 1000
     learning_rate: float = 0.001
     gamma: float = 0.99
-    num_runs: int = 5
-    
-    # 设备和输出
+    train_seasons: List[str] = None
+    val_season: str = None
+    test_season: str = None
+    model: ModelConfig = None
+    use_ilp: bool = True
+    use_synergy: bool = True
+    use_triple_captain: bool = False
+    use_bench_boost: bool = False
     device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    output_path: str = 'experiments'
-    random_seed: int = 42
-    
-    # 模型配置
-    model: ModelConfig = ModelConfig()
 
     def __post_init__(self):
         """初始化后的处理"""
@@ -99,10 +92,14 @@ class ExperimentConfig:
 def get_default_config() -> ExperimentConfig:
     """获取默认配置"""
     return ExperimentConfig(
-        data_path=os.path.join(PROJECT_ROOT, 'data'),  # 添加默认数据路径
+        data_path=os.path.join(PROJECT_ROOT, 'data'),
+        output_path=os.path.join(PROJECT_ROOT, 'experiments'),  # 添加默认输出路径
         train_seasons=['2016-17', '2017-18', '2018-19'],
         val_season='2019-20',
-        test_season='2020-21'
+        test_season='2020-21',
+        budget=BUDGET,
+        max_players=NUM_PLAYERS,
+        model=ModelConfig()  # 使用默认模型配置
     )
 
 # 为了保持向后兼容
@@ -111,10 +108,14 @@ DEFAULT_CONFIG = get_default_config()
 # 创建 COVID 配置
 print("\nDEBUG: Creating COVID_CONFIG...")
 COVID_CONFIG = ExperimentConfig(
-    data_path=os.path.join(PROJECT_ROOT, 'data'),  # 添加data_path
+    data_path=os.path.join(PROJECT_ROOT, 'data'),
+    output_path=os.path.join(PROJECT_ROOT, 'experiments'),  # 添加输出路径
     train_seasons=['2019-20', '2020-21'],
     val_season='2021-22',
-    test_season='2022-23'
+    test_season='2022-23',
+    budget=BUDGET,
+    max_players=NUM_PLAYERS,
+    model=ModelConfig()  # 使用默认模型配置
 )
 print("COVID_CONFIG created, id:", id(COVID_CONFIG))
 print("COVID_CONFIG dict:", COVID_CONFIG.__dict__)

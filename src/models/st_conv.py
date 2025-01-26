@@ -3,7 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import random
-from src.models.neural_ilp import NeuralILPSolver
+from models.neural_ilp import NeuralILPSolver
+from models.gat_fusion import GATFusion
 
 class DilatedTCN(nn.Module):
     """带有扩张的时间卷积网络"""

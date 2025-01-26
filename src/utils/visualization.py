@@ -5,11 +5,13 @@ import seaborn as sns
 from sklearn.manifold import TSNE
 from typing import Dict, List
 import pandas as pd
+from pathlib import Path
 
 class VisualizationTool:
     """实验结果可视化工具"""
-    def __init__(self, save_dir: str):
-        self.save_dir = save_dir
+    def __init__(self, output_dir: str):
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(exist_ok=True)
     
     def plot_tsne_visualization(self, 
                               features_dict: Dict[str, torch.Tensor],
@@ -45,27 +47,19 @@ class VisualizationTool:
         # 绘制散点图
         sns.scatterplot(data=df, x='x', y='y', hue='Season', alpha=0.6)
         plt.title(title)
-        plt.savefig(f"{self.save_dir}/tsne_{title.lower().replace(' ', '_')}.png")
+        plt.savefig(self.output_dir / f"tsne_{title.lower().replace(' ', '_')}.png")
         plt.close()
     
-    def plot_training_curves(self, 
-                           metrics_history: Dict[str, List[float]],
-                           title: str = "Training Progress"):
+    def plot_training_curves(self, metrics: dict):
         """绘制训练曲线"""
-        plt.figure(figsize=(15, 10))
-        num_metrics = len(metrics_history)
-        cols = 2
-        rows = (num_metrics + 1) // 2
-        
-        for i, (metric_name, values) in enumerate(metrics_history.items(), 1):
-            plt.subplot(rows, cols, i)
-            plt.plot(values)
-            plt.title(f"{metric_name} over Time")
-            plt.xlabel("Episodes")
-            plt.ylabel(metric_name)
-        
-        plt.tight_layout()
-        plt.savefig(f"{self.save_dir}/training_curves.png")
+        plt.figure(figsize=(12, 8))
+        for metric_name, values in metrics.items():
+            plt.plot(values, label=metric_name)
+        plt.xlabel('Episode')
+        plt.ylabel('Value')
+        plt.title('Training Metrics')
+        plt.legend()
+        plt.savefig(self.output_dir / 'training_curves.png')
         plt.close()
     
     def plot_generalization_analysis(self, results: Dict):
@@ -106,7 +100,7 @@ class VisualizationTool:
         plt.legend()
         
         plt.tight_layout()
-        plt.savefig(f"{self.save_dir}/generalization_analysis.png")
+        plt.savefig(self.output_dir / "generalization_analysis.png")
         plt.close()
 
 class ResultAnalyzer:

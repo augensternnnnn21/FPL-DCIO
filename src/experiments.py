@@ -1,6 +1,7 @@
 import os
 import json
 import torch
+import torch.optim as optim
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -9,7 +10,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 import random
-from torch import optim
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
 from pathlib import Path
@@ -26,9 +26,10 @@ from config import (
 )
 from environment import FPLEnv
 from models.st_conv import DilatedTCN
+from utils.logger import FPLLogger
 from utils.visualization import VisualizationTool, ResultAnalyzer
 from utils.statistical_analysis import StatisticalAnalyzer
-from models.generalization import evaluate_generalization
+from models.generalization import evaluate_generalization, GeneralizationEvaluator
 
 class ExperimentRunner:
     """实验运行器"""
@@ -47,14 +48,11 @@ class ExperimentRunner:
         
         # 创建环境
         print("\nDEBUG: Creating environment...")
-        season = config.train_seasons[0]  # 使用第一个训练赛季
-        season_path = self.base_data_path / season / f"{season}_processed.csv"
-        print(f"Full data path: {season_path}")
-        print(f"File exists: {season_path.exists()}")
         
         # 创建环境配置
         env_config = ExperimentConfig(
-            data_path=str(season_path),
+            data_path=str(self.base_data_path),  # 直接使用基础数据路径
+            output_path=config.output_path,
             train_seasons=config.train_seasons,
             val_season=config.val_season,
             test_season=config.test_season,
@@ -63,7 +61,6 @@ class ExperimentRunner:
             num_episodes=config.num_episodes,
             learning_rate=config.learning_rate,
             gamma=config.gamma,
-            output_path=config.output_path,
             model=config.model
         )
         
@@ -133,6 +130,17 @@ class ExperimentRunner:
             self.env.special_cards['triple_captain'] = True
         if config.use_bench_boost:
             self.env.special_cards['bench_boost'] = True
+        
+        # 初始化结果字典
+        self.results = {
+            'training': {},
+            'validation': {},
+            'testing': {},
+            'generalization': {
+                'regular': {},
+                'covid': {}
+            }
+        }
     
     def _create_model(self, input_dim: int, model_config: ModelConfig):
         """创建模型"""
@@ -221,14 +229,6 @@ class ExperimentRunner:
         """运行实验"""
         # 保存实验配置
         self._save_config()
-        
-        # 初始化结果存储
-        self.results = {
-            'training': defaultdict(list),
-            'validation': defaultdict(list),
-            'testing': defaultdict(list),
-            'runs': []
-        }
         
         # 多次运行以获得统计显著性
         num_runs = getattr(self.config, 'num_runs', 5)  # 如果没有设置，默认为5次

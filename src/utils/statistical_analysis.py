@@ -144,4 +144,20 @@ class StatisticalAnalyzer:
         report += f"Relative Gap: {gen_stats['relative_gap']:.4f}\n"
         report += f"Statistical Significance: {gen_stats['significance']['p_value']:.4f}\n\n"
         
-        return report 
+        return report
+
+    def analyze_performance(self, results: dict):
+        """分析性能指标"""
+        analysis = {}
+        
+        for metric, values in results.items():
+            if isinstance(values, (list, np.ndarray)):
+                analysis[metric] = {
+                    'mean': np.mean(values),
+                    'std': np.std(values),
+                    'median': np.median(values),
+                    'min': np.min(values),
+                    'max': np.max(values)
+                }
+        
+        return analysis 
