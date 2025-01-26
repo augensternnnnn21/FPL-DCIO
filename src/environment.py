@@ -91,82 +91,96 @@ class FPLEnv(gym.Env):
     
     def reset(self, season: Optional[str] = None) -> Dict:
         """重置环境"""
-        if season:
-            try:
+        try:
+            if season:
                 raw_data = self.data_loader.load_data(season)
+                if len(raw_data) == 0:
+                    print(f"⚠️ 警告: {season} 赛季数据为空，使用默认数据")
+                    raw_data = self.data_loader.load_data()
                 self.data = self.preprocessor.preprocess(raw_data, self.team_data)
-            except Exception as e:
-                print(f"❌ 加载赛季数据错误: {str(e)}")
-                raise
-        
-        self.current_gameweek = 1
-        self.selected_players = np.zeros(len(self.data[self.data['gw'] == 1]))
-        self.available_budget = self.budget
-        
-        # 获取当前状态的数据
-        current_data = self.data[self.data['gw'] == self.current_gameweek]
-        
-        # 返回初始状态
-        return {
-            'player_features': torch.from_numpy(self._get_state_features(current_data)).float().to(self.device),
-            'position_onehot': torch.from_numpy(self._get_position_onehot(current_data)).float().to(self.device),
-            'team_onehot': self._get_team_onehot(current_data).to(self.device),
-            'gameweek': self.current_gameweek,
-            'raw_features': {
-                'values': torch.from_numpy(current_data['value'].values).float().to(self.device),
-                'total_points': torch.from_numpy(current_data['total_points'].values).float().to(self.device),
-                'names': current_data['name'].values
+                
+            self.current_gameweek = 1
+            current_data = self.data[self.data['gw'] == self.current_gameweek]
+            
+            # 验证数据
+            if len(current_data) == 0:
+                raise ValueError(f"当前比赛周 {self.current_gameweek} 没有数据")
+            
+            self.selected_players = np.zeros(len(current_data))
+            self.available_budget = self.budget
+            
+            # 返回初始状态
+            return {
+                'player_features': torch.from_numpy(self._get_state_features(current_data)).float().to(self.device),
+                'position_onehot': torch.from_numpy(self._get_position_onehot(current_data)).float().to(self.device),
+                'team_onehot': self._get_team_onehot(current_data).to(self.device),
+                'gameweek': self.current_gameweek,
+                'raw_features': {
+                    'values': torch.from_numpy(current_data['value'].values).float().to(self.device),
+                    'total_points': torch.from_numpy(current_data['total_points'].values).float().to(self.device),
+                    'names': current_data['name'].values
+                }
             }
-        }
+        except Exception as e:
+            print(f"❌ 重置环境错误: {str(e)}")
+            print(f"Season: {season}")
+            print(f"Data shape: {self.data.shape if hasattr(self, 'data') else 'No data'}")
+            raise
     
     def step(self, action):
         """执行一步动作"""
-        # 验证动作
-        if not isinstance(action, np.ndarray):
-            action = action.cpu().numpy() if isinstance(action, torch.Tensor) else np.array(action)
-        
-        # 获取当前状态的数据
-        current_data = self.data[self.data['gw'] == self.current_gameweek]
-        
-        # 确保 action 是正确的维度
-        if len(action.shape) == 1:
-            action = action.reshape(-1)  # 确保是一维数组
-        
-        # 更新选择状态
-        self.selected_players = np.array(action, dtype=np.float32)  # 确保是 numpy 数组
-        
-        # 计算奖励
-        reward = self._calculate_reward(action, current_data)
-        
-        # 更新游戏周
-        self.current_gameweek += 1
-        done = self.current_gameweek > 38
-        
-        # 检查约束违反
-        violations = {
-            'budget': self._check_budget_constraint(action, current_data),
-            'squad_size': self._check_squad_size_constraint(action),
-            'position': self._check_position_constraint(action, current_data)
-        }
-        
-        # 如果违反约束，给予惩罚
-        if any(violations.values()):
-            reward -= sum(violations.values()) * 1000  # 可以调整惩罚系数
-        
-        # 获取新状态
-        next_state = {
-            'player_features': torch.from_numpy(self._get_state_features(current_data)).float().to(self.device),
-            'position_onehot': torch.from_numpy(self._get_position_onehot(current_data)).float().to(self.device),
-            'team_onehot': self._get_team_onehot(current_data).to(self.device),
-            'gameweek': self.current_gameweek,
-            'raw_features': {
-                'values': torch.from_numpy(current_data['value'].values).float().to(self.device),
-                'total_points': torch.from_numpy(current_data['total_points'].values).float().to(self.device),
-                'names': current_data['name'].values
-            }
-        }
-        
-        return next_state, reward, done, violations
+        try:
+            # 验证动作
+            if isinstance(action, dict):
+                action = action['action']  # 如果是字典，获取动作值
+            
+            if isinstance(action, torch.Tensor):
+                action = action.cpu().numpy()
+            elif not isinstance(action, np.ndarray):
+                action = np.array(action)
+            
+            # 确保 action 是正确的维度
+            if len(action.shape) > 1:
+                action = action.reshape(-1)  # 展平为一维数组
+            
+            # 获取当前状态的数据
+            current_data = self.data[self.data['gw'] == self.current_gameweek]
+            
+            # 更新选择状态
+            self.selected_players = action.astype(np.float32)  # 确保是 float32 类型
+            
+            # 计算奖励
+            reward = self._calculate_reward(action, current_data)
+            
+            # 更新比赛周
+            self.current_gameweek += 1
+            done = self.current_gameweek > 38
+            
+            # 获取下一个状态
+            if not done:
+                next_data = self.data[self.data['gw'] == self.current_gameweek]
+                next_state = {
+                    'player_features': torch.from_numpy(self._get_state_features(next_data)).float().to(self.device),
+                    'position_onehot': torch.from_numpy(self._get_position_onehot(next_data)).float().to(self.device),
+                    'team_onehot': self._get_team_onehot(next_data).to(self.device),
+                    'gameweek': self.current_gameweek,
+                    'raw_features': {
+                        'values': torch.from_numpy(next_data['value'].values).float().to(self.device),
+                        'total_points': torch.from_numpy(next_data['total_points'].values).float().to(self.device),
+                        'names': next_data['name'].values
+                    }
+                }
+            else:
+                next_state = None
+            
+            return next_state, reward, done, {}
+            
+        except Exception as e:
+            print(f"Error in step: {str(e)}")
+            print(f"Action type: {type(action)}")
+            print(f"Action shape: {getattr(action, 'shape', 'No shape')}")
+            print(f"Action value: {action}")
+            raise
 
     def _check_budget_constraint(self, action, current_data):
         """检查预算约束"""
@@ -261,33 +275,48 @@ class FPLEnv(gym.Env):
     
     def _get_position_onehot(self, data):
         """获取位置的独热编码"""
-        # 首先创建位置映射
-        position_mapping = {
-            'Goalkeeper': 'GK',
-            'Defender': 'DEF',
-            'Midfielder': 'MID',
-            'Forward': 'FWD',
-            # 添加可能的其他映射
-            'GK': 'GK',
-            'DEF': 'DEF',
-            'MID': 'MID',
-            'FWD': 'FWD'
-        }
-        
-        # 转换位置名称
-        data['position_mapped'] = data['position'].map(position_mapping)
-        
-        # 检查是否有未映射的位置
-        unmapped = data[data['position_mapped'].isna()]['position'].unique()
-        if len(unmapped) > 0:
-            print(f"Warning: Found unmapped positions: {unmapped}")
-            # 可以添加默认映射或者抛出错误
-        
-        # 获取独热编码
-        positions = ['GK', 'DEF', 'MID', 'FWD']
-        position_onehot = pd.get_dummies(data['position_mapped'])[positions].values
-        
-        return position_onehot
+        try:
+            # 首先创建位置映射
+            position_mapping = {
+                'Goalkeeper': 'GK',
+                'Defender': 'DEF',
+                'Midfielder': 'MID',
+                'Forward': 'FWD',
+                'GKP': 'GK',  # 添加这个映射
+                # 添加可能的其他映射
+                'GK': 'GK',
+                'DEF': 'DEF',
+                'MID': 'MID',
+                'FWD': 'FWD'
+            }
+            
+            # 转换位置名称
+            data.loc[:, 'position_mapped'] = data['position'].map(position_mapping)
+            
+            # 检查是否有未映射的位置
+            unmapped = data[data['position_mapped'].isna()]['position'].unique()
+            if len(unmapped) > 0:
+                print(f"Warning: Found unmapped positions: {unmapped}")
+                # 可以添加默认映射
+                data.loc[data['position_mapped'].isna(), 'position_mapped'] = 'GK'
+            
+            # 获取独热编码
+            positions = ['GK', 'DEF', 'MID', 'FWD']
+            position_onehot = pd.get_dummies(data['position_mapped'])
+            
+            # 确保所有需要的列都存在
+            for pos in positions:
+                if pos not in position_onehot.columns:
+                    position_onehot[pos] = 0
+            
+            return position_onehot[positions].values
+            
+        except Exception as e:
+            print(f"Error in _get_position_onehot: {str(e)}")
+            print(f"Data shape: {data.shape}")
+            print(f"Available columns: {data.columns.tolist()}")
+            print(f"Position values: {data['position'].unique()}")
+            raise
     
     def _get_team_onehot(self, data: pd.DataFrame) -> torch.Tensor:
         """获取球队的独热编码"""

@@ -11,14 +11,19 @@ class DilatedTCN(nn.Module):
                  n_layers: int = 3,  # 使用 n_layers 而不是 num_layers
                  dropout: float = 0.1,
                  use_attention: bool = True,
-                 bidirectional: bool = True):
+                 bidirectional: bool = True,
+                 device: str = None):  # 添加 device 参数
         super().__init__()
+        
+        # 设置设备
+        self.device = device if device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
         self.use_attention = use_attention
         self.bidirectional = bidirectional
+        self.gamma = 0.99  # 添加折扣因子
         
         # 修改输入投影层
         self.input_proj = nn.Linear(input_dim, hidden_dim)
@@ -56,6 +61,12 @@ class DilatedTCN(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, 1)
         )
+        
+        # 添加损失函数
+        self.criterion = nn.MSELoss()
+        
+        # 将模型移动到指定设备
+        self.to(self.device)
         
     def forward(self, x):
         """
@@ -123,36 +134,28 @@ class DilatedTCN(nn.Module):
 
     def select_action(self, state):
         """选择动作"""
-        # 确保输入是张量
-        if isinstance(state, dict):
-            state = state['player_features']
-        if not isinstance(state, torch.Tensor):
-            state = torch.FloatTensor(state)
-        
-        # 打印输入状态的形状
-        print(f"State shape before forward: {state.shape}")
-        
-        # 获取特征表示
-        features = self.forward(state)  # [batch_size, seq_len, hidden_dim]
-        print(f"Features shape after forward: {features.shape}")
-        
-        # 全局池化得到固定维度的特征
-        pooled_features = features.mean(dim=1)  # [batch_size, hidden_dim]
-        print(f"Pooled features shape: {pooled_features.shape}")
-        
-        # 计算动作概率和状态值
-        action_probs = torch.sigmoid(self.action_head(pooled_features))
-        value = self.value_head(pooled_features)
-        
-        # 采样动作
-        action = (action_probs > 0.5).float()
-        
-        # 确保返回numpy数组
-        return {
-            'action': action.squeeze().detach().cpu().numpy().astype(np.float32),
-            'action_probs': action_probs.squeeze().detach().cpu().numpy(),
-            'value': value.squeeze().detach().cpu().numpy()
-        }
+        try:
+            # 获取特征
+            features = self.forward(state['player_features'])  # [batch_size, seq_len, hidden_dim]
+            
+            # 全局池化
+            features = features.transpose(1, 2)  # [batch_size, hidden_dim, seq_len]
+            features = self.feature_pooling(features)  # [batch_size, hidden_dim, 1]
+            features = features.squeeze(-1)  # [batch_size, hidden_dim]
+            
+            # 生成动作概率
+            action_probs = torch.sigmoid(self.action_head(features))
+            
+            # 使用阈值生成二元动作
+            action = (action_probs > 0.5).float()
+            
+            return action.detach()  # 返回分离的张量
+            
+        except Exception as e:
+            print(f"Error in select_action: {str(e)}")
+            print(f"State shape before forward: {state['player_features'].shape}")
+            print(f"Input shape: {state['player_features'].shape}")
+            raise
     
     def get_representation(self, state):
         """获取状态表示"""

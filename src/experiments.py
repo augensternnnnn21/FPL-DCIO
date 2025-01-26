@@ -116,8 +116,9 @@ class ExperimentRunner:
             n_layers=model_config.num_layers,
             dropout=model_config.dropout,
             bidirectional=model_config.bidirectional,
-            use_attention=model_config.use_attention
-        ).to(self.config.device)
+            use_attention=model_config.use_attention,
+            device=self.config.device
+        )
     
     def _collect_features(self, seasons):
         """收集特定赛季的特征"""
@@ -387,8 +388,8 @@ class ExperimentRunner:
             # 执行动作
             next_state, reward, done, _ = self.env.step(action)
             
-            # 转换状态为张量
-            state_tensor = {
+            # 存储当前状态
+            state_dict = {
                 'player_features': state['player_features'].detach().cpu().numpy(),
                 'position_onehot': state['position_onehot'].detach().cpu().numpy(),
                 'team_onehot': state['team_onehot'].detach().cpu().numpy(),
@@ -400,34 +401,40 @@ class ExperimentRunner:
                 }
             }
             
-            next_state_tensor = {
-                'player_features': next_state['player_features'].detach().cpu().numpy(),
-                'position_onehot': next_state['position_onehot'].detach().cpu().numpy(),
-                'team_onehot': next_state['team_onehot'].detach().cpu().numpy(),
-                'gameweek': next_state['gameweek'],
-                'raw_features': {
-                    'values': next_state['raw_features']['values'].detach().cpu().numpy(),
-                    'total_points': next_state['raw_features']['total_points'].detach().cpu().numpy(),
-                    'names': next_state['raw_features']['names']
+            # 存储下一个状态（如果不是终止状态）
+            if next_state is not None:
+                next_state_dict = {
+                    'player_features': next_state['player_features'].detach().cpu().numpy(),
+                    'position_onehot': next_state['position_onehot'].detach().cpu().numpy(),
+                    'team_onehot': next_state['team_onehot'].detach().cpu().numpy(),
+                    'gameweek': next_state['gameweek'],
+                    'raw_features': {
+                        'values': next_state['raw_features']['values'].detach().cpu().numpy(),
+                        'total_points': next_state['raw_features']['total_points'].detach().cpu().numpy(),
+                        'names': next_state['raw_features']['names']
+                    }
                 }
-            }
+            else:
+                # 如果是终止状态，使用当前状态作为下一个状态
+                next_state_dict = state_dict.copy()
             
             # 存储转换
-            states.append(state_tensor)
-            actions.append(action.detach().cpu().numpy())
+            states.append(state_dict)
+            actions.append(action.cpu().numpy())
             rewards.append(reward)
-            next_states.append(next_state_tensor)
+            next_states.append(next_state_dict)
             dones.append(done)
             
             # 更新状态
-            state = next_state
+            if not done:
+                state = next_state
         
         # 返回收集的数据
         return {
-            'states': np.array(states, dtype=object),  # 使用 object 类型存储字典
+            'states': np.array(states, dtype=object),
             'actions': np.array(actions),
             'rewards': np.array(rewards),
-            'next_states': np.array(next_states, dtype=object),  # 使用 object 类型存储字典
+            'next_states': np.array(next_states, dtype=object),
             'dones': np.array(dones)
         }
     

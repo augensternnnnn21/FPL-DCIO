@@ -20,23 +20,44 @@ class FPLDataLoader:
             raise FileNotFoundError(f"球队数据文件不存在: {self.teams_path}")
     
     def load_data(self, season: str = None) -> pd.DataFrame:
-        """加载数据
-        
-        Args:
-            season: 可选的赛季筛选条件
-            
-        Returns:
-            pd.DataFrame: 加载的数据
-        """
+        """加载数据"""
         try:
             # 加载数据
-            df = pd.read_csv(self.seasons_path)
+            df = pd.read_csv(self.seasons_path, low_memory=False)
             print(f"✅ 成功加载赛季数据，共 {len(df)} 条记录")
             
             # 如果指定了赛季，筛选数据
             if season:
-                df = df[df['season_x'] == season]
-                print(f"✅ 筛选 {season} 赛季数据，共 {len(df)} 条记录")
+                # 打印所有可用的赛季
+                available_seasons = df['season_x'].unique()
+                print(f"可用赛季: {available_seasons}")
+                
+                # 尝试精确匹配
+                season_data = df[df['season_x'] == season]
+                
+                # 如果没有找到，尝试模糊匹配
+                if len(season_data) == 0:
+                    season_data = df[df['season_x'].str.contains(season, na=False)]
+                
+                print(f"✅ 筛选 {season} 赛季数据，共 {len(season_data)} 条记录")
+                
+                # 如果仍然没有找到数据，使用最近的赛季
+                if len(season_data) == 0:
+                    print(f"⚠️ 警告: 未找到 {season} 赛季的数据")
+                    # 按年份排序赛季
+                    sorted_seasons = sorted(available_seasons, 
+                                         key=lambda x: int(x.split('-')[0]))
+                    # 找到最接近的赛季
+                    target_year = int(season.split('-')[0])
+                    closest_season = min(sorted_seasons, 
+                                       key=lambda x: abs(int(x.split('-')[0]) - target_year))
+                    print(f"使用最接近的赛季 {closest_season} 作为替代")
+                    season_data = df[df['season_x'] == closest_season]
+                
+                if len(season_data) == 0:
+                    raise ValueError(f"无法找到有效的赛季数据")
+                    
+                return season_data
             
             return df
             
