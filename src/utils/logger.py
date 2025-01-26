@@ -1,88 +1,71 @@
-import os
 import logging
-from datetime import datetime
+from pathlib import Path
+import datetime
 import json
-import pandas as pd
-from config import MODEL_SAVE_PATH
 
 class FPLLogger:
-    def __init__(self, name, log_dir=None):
-        if log_dir is None:
-            log_dir = os.path.join(MODEL_SAVE_PATH, 'logs')
-        os.makedirs(log_dir, exist_ok=True)
+    def __init__(self, log_dir: str = "logs"):
+        self.log_dir = Path(log_dir)
+        self.log_dir.mkdir(exist_ok=True)
         
-        # 设置日志格式
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.INFO)
+        # 创建本次运行的时间戳目录
+        self.timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.run_dir = self.log_dir / self.timestamp
+        self.run_dir.mkdir(exist_ok=True)
         
-        # 文件处理器
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        log_file = os.path.join(log_dir, f'{name}_{timestamp}.log')
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.INFO)
+        # 设置日志文件
+        log_file = self.run_dir / "training.log"
         
-        # 控制台处理器
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        
-        # 格式化器
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        # 配置日志格式
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s [%(levelname)s] %(message)s',
+            handlers=[
+                logging.FileHandler(log_file),
+                logging.StreamHandler()
+            ]
         )
-        file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
-        
-        # 添加处理器
-        self.logger.addHandler(file_handler)
-        self.logger.addHandler(console_handler)
-        
-        # 训练历史记录
-        self.history = {
-            'episodes': [],
-            'rewards': [],
-            'losses': [],
-            'points': [],
-            'team_values': []
-        }
-        
-        self.log_file = log_file
+        self.logger = logging.getLogger("FPL-DCIO")
     
-    def log_episode(self, episode, reward, loss, points, team_value):
-        """记录每个episode的信息"""
-        self.history['episodes'].append(episode)
-        self.history['rewards'].append(reward)
-        self.history['losses'].append(loss)
-        self.history['points'].append(points)
-        self.history['team_values'].append(team_value)
-        
+    def log_training(self, episode, metrics):
+        """记录训练信息"""
         self.logger.info(
-            f"Episode {episode} - "
-            f"Reward: {reward:.2f}, Loss: {loss:.4f}, "
-            f"Points: {points:.1f}, Team Value: {team_value:.1f}"
+            f"Episode {episode} | "
+            f"Reward: {metrics['reward']:.2f} | "
+            f"Loss: {metrics['loss']:.4f} | "
+            f"Team Value: {metrics['team_value']:.1f}M | "
+            f"Points: {metrics['points']} | "
+            f"Violations: {metrics['violations']}"
+        )
+        
+        # 保存详细指标到JSON
+        metrics_file = self.run_dir / "metrics.json"
+        with open(metrics_file, "a") as f:
+            json.dump({
+                "episode": episode,
+                **metrics
+            }, f)
+            f.write("\n")
+    
+    def log_evaluation(self, season, metrics):
+        """记录评估结果"""
+        self.logger.info(
+            f"\nEvaluation on {season}:\n"
+            f"Average Points: {metrics['avg_points']:.2f}\n"
+            f"Total Value: {metrics['total_value']:.1f}M\n"
+            f"Constraint Violations: {metrics['violations']}\n"
+            f"Team Diversity: {metrics['team_diversity']:.2f}\n"
+            f"Synergy Score: {metrics.get('synergy_score', 'N/A')}"
         )
     
-    def log_evaluation(self, results):
-        """记录评估结果"""
-        self.logger.info("\nEvaluation Results:")
-        self.logger.info(f"Average Points: {results['avg_points']:.1f} ± {results['std_points']:.1f}")
-        self.logger.info(f"Average Team Value: £{results['avg_value']:.1f}m")
-        self.logger.info("\nFormation Usage:")
-        self.logger.info(results['formations'].mean())
-        
-        # 保存详细结果
-        results_file = self.log_file.replace('.log', '_results.json')
-        with open(results_file, 'w') as f:
-            json.dump({
-                'avg_points': float(results['avg_points']),
-                'std_points': float(results['std_points']),
-                'avg_value': float(results['avg_value']),
-                'formations': results['formations'].mean().to_dict(),
-                'top_players': results['player_selections'].head(10).to_dict()
-            }, f, indent=4)
-    
-    def save_history(self):
-        """保存训练历史"""
-        history_df = pd.DataFrame(self.history)
-        history_file = self.log_file.replace('.log', '_history.csv')
-        history_df.to_csv(history_file, index=False)
-        self.logger.info(f"Training history saved to {history_file}")
+    def log_team_selection(self, gameweek, selected_team):
+        """记录球队选择"""
+        self.logger.info(f"\nGameweek {gameweek} Team Selection:")
+        for pos in ['GK', 'DEF', 'MID', 'FWD']:
+            players = selected_team[selected_team['position'] == pos]
+            self.logger.info(f"\n{pos}:")
+            for _, player in players.iterrows():
+                self.logger.info(
+                    f"  {player['name']} ({player['team']}) - "
+                    f"£{player['value']}M, Points: {player['points']}"
+                )

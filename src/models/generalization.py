@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Dict, List
 import numpy as np
+import logging
 
 class DomainAdversarialTraining(nn.Module):
     """领域对抗训练模块，用于增强跨赛季泛化性"""
@@ -266,3 +267,129 @@ def evaluate_generalization(model, env, config, season, num_episodes=10):
         print(f"Season: {season}")
         print(f"Episode: {episode}")
         raise 
+
+class GeneralizationEvaluator:
+    def __init__(self, logger=None):
+        self.logger = logger or logging.getLogger("FPL-DCIO")
+    
+    def evaluate_cross_season(self, 
+                            model: torch.nn.Module,
+                            env,
+                            train_seasons: List[str],
+                            test_season: str,
+                            num_episodes: int = 10) -> Dict:
+        """评估跨赛季泛化性能"""
+        metrics = {
+            'avg_points': [],
+            'total_value': [],
+            'violations': [],
+            'team_diversity': [],
+            'synergy_score': []
+        }
+        
+        for _ in range(num_episodes):
+            episode_metrics = self._evaluate_single_episode(
+                model, env, test_season
+            )
+            for key in metrics:
+                metrics[key].append(episode_metrics[key])
+        
+        # 计算平均值和标准差
+        results = {
+            key: {
+                'mean': np.mean(values),
+                'std': np.std(values)
+            }
+            for key, values in metrics.items()
+        }
+        
+        self.logger.info(f"\nCross-season evaluation ({test_season}):")
+        for key, value in results.items():
+            self.logger.info(
+                f"{key}: {value['mean']:.2f} ± {value['std']:.2f}"
+            )
+        
+        return results
+    
+    def evaluate_covid_impact(self, 
+                            model: torch.nn.Module,
+                            env,
+                            normal_season: str,
+                            covid_season: str) -> Dict:
+        """评估在COVID赛季的泛化性能"""
+        normal_metrics = self.evaluate_cross_season(
+            model, env, [normal_season], normal_season
+        )
+        covid_metrics = self.evaluate_cross_season(
+            model, env, [normal_season], covid_season
+        )
+        
+        # 计算性能差异
+        impact = {
+            key: {
+                'relative_change': (
+                    covid_metrics[key]['mean'] - normal_metrics[key]['mean']
+                ) / normal_metrics[key]['mean'] * 100
+            }
+            for key in normal_metrics
+        }
+        
+        self.logger.info("\nCOVID Impact Analysis:")
+        for key, value in impact.items():
+            self.logger.info(
+                f"{key} change: {value['relative_change']:.1f}%"
+            )
+        
+        return {
+            'normal': normal_metrics,
+            'covid': covid_metrics,
+            'impact': impact
+        }
+    
+    def evaluate_transfer_window(self, 
+                               model: torch.nn.Module,
+                               env,
+                               season: str,
+                               window_gw: int) -> Dict:
+        """评估转会窗口前后的性能变化"""
+        pre_window = self._evaluate_period(
+            model, env, season, 1, window_gw
+        )
+        post_window = self._evaluate_period(
+            model, env, season, window_gw + 1, 38
+        )
+        
+        return {
+            'pre_window': pre_window,
+            'post_window': post_window
+        }
+    
+    def _evaluate_single_episode(self, model, env, season):
+        """评估单个episode的性能"""
+        state = env.reset(season=season)
+        done = False
+        total_points = 0
+        violations = 0
+        
+        while not done:
+            action = model.select_action(state, epsilon=0)  # 测试时不需要探索
+            next_state, reward, done, info = env.step(action)
+            
+            total_points += info.get('points', 0)
+            violations += info.get('violations', 0)
+            
+            if not done:
+                state = next_state
+        
+        return {
+            'avg_points': total_points / 38,  # 每周平均得分
+            'total_value': info.get('total_value', 0),
+            'violations': violations,
+            'team_diversity': info.get('team_diversity', 0),
+            'synergy_score': info.get('synergy_score', 0)
+        }
+    
+    def _evaluate_period(self, model, env, season, start_gw, end_gw):
+        """评估特定比赛周期间的性能"""
+        # 实现特定期间的评估逻辑
+        pass 
