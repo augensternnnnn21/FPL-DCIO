@@ -39,6 +39,19 @@ class DilatedTCN(nn.Module):
         self.output_dim = hidden_dim * 2 if bidirectional else hidden_dim
         self.output_layer = nn.Linear(self.output_dim, 1)
         
+        # 添加动作选择相关的层
+        self.action_head = nn.Sequential(
+            nn.Linear(self.output_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1)  # 输出动作概率
+        )
+        
+        self.value_head = nn.Sequential(
+            nn.Linear(self.output_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1)  # 输出状态值
+        )
+        
     def forward(self, x):
         # 输入形状: [batch_size, seq_len, input_dim]
         batch_size, seq_len, _ = x.shape
@@ -73,6 +86,71 @@ class DilatedTCN(nn.Module):
         x = torch.sigmoid(x)
         
         return x.squeeze(-1)  # [batch_size, seq_len]
+
+    def select_action(self, state):
+        """选择动作"""
+        # 确保输入是张量
+        if isinstance(state, dict):
+            state = state['player_features']
+        if not isinstance(state, torch.Tensor):
+            state = torch.FloatTensor(state)
+        
+        # 添加批次维度（如果需要）
+        if len(state.shape) == 2:
+            state = state.unsqueeze(0)
+        
+        # 获取特征表示
+        features = self.forward(state)
+        
+        # 计算动作概率和状态值
+        action_probs = torch.sigmoid(self.action_head(features))
+        value = self.value_head(features)
+        
+        # 采样动作
+        action = (action_probs > 0.5).float()
+        
+        return {
+            'action': action.squeeze().detach().cpu().numpy(),
+            'action_probs': action_probs.squeeze().detach().cpu().numpy(),
+            'value': value.squeeze().detach().cpu().numpy()
+        }
+    
+    def get_representation(self, state):
+        """获取状态表示"""
+        if isinstance(state, dict):
+            state = state['player_features']
+        if not isinstance(state, torch.Tensor):
+            state = torch.FloatTensor(state)
+        if len(state.shape) == 2:
+            state = state.unsqueeze(0)
+            
+        return self.forward(state)
+    
+    def compute_loss(self, episode_data, current_season):
+        """计算损失"""
+        states = torch.FloatTensor(episode_data['states'])
+        actions = torch.FloatTensor(episode_data['actions'])
+        rewards = torch.FloatTensor(episode_data['rewards'])
+        
+        # 获取预测值
+        features = self.forward(states)
+        action_probs = torch.sigmoid(self.action_head(features))
+        values = self.value_head(features)
+        
+        # 计算策略损失
+        policy_loss = F.binary_cross_entropy(action_probs, actions)
+        
+        # 计算值函数损失
+        value_loss = F.mse_loss(values.squeeze(), rewards)
+        
+        # 总损失
+        total_loss = policy_loss + 0.5 * value_loss
+        
+        return {
+            'policy_loss': policy_loss,
+            'value_loss': value_loss,
+            'total_loss': total_loss
+        }
 
 class GATFusion(nn.Module):
     """图注意力融合模块"""

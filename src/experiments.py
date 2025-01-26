@@ -40,7 +40,7 @@ class ExperimentRunner:
         print("\nDEBUG: ExperimentRunner init...")
         
         # 保存基础配置
-        self.base_config = config
+        self.config = config
         self.base_data_path = Path(config.data_path)
         print(f"Base data path: {self.base_data_path}")
         
@@ -117,7 +117,7 @@ class ExperimentRunner:
             dropout=model_config.dropout,
             bidirectional=model_config.bidirectional,
             use_attention=model_config.use_attention
-        ).to(self.base_config.device)
+        ).to(self.config.device)
     
     def _collect_features(self, seasons):
         """收集特定赛季的特征"""
@@ -129,10 +129,13 @@ class ExperimentRunner:
     
     def _get_epsilon(self, step):
         """获取探索率"""
+        epsilon_end = 0.01    # 设置默认值
+        epsilon_start = 1.0   # 设置默认值
+        epsilon_decay = 0.995 # 设置默认值
+        
         return max(
-            self.config.training.epsilon_end,
-            self.config.training.epsilon_start * 
-            (self.config.training.epsilon_decay ** step)
+            epsilon_end,
+            epsilon_start * (epsilon_decay ** step)
         )
     
     def _log_training_progress(self, episode, loss_dict):
@@ -189,16 +192,28 @@ class ExperimentRunner:
         # 保存实验配置
         self._save_config()
         
+        # 初始化结果存储
+        self.results = {
+            'training': defaultdict(list),
+            'validation': defaultdict(list),
+            'testing': defaultdict(list),
+            'runs': []
+        }
+        
         # 多次运行以获得统计显著性
-        for run in range(self.config.num_runs):
-            print(f"\nStarting Run {run + 1}/{self.config.num_runs}")
+        num_runs = getattr(self.config, 'num_runs', 5)  # 如果没有设置，默认为5次
+        for run in range(num_runs):
+            print(f"\nStarting Run {run + 1}/{num_runs}")
             
             # 重置随机种子
             torch.manual_seed(self.config.random_seed + run)
             np.random.seed(self.config.random_seed + run)
             
             # 运行单次实验
-            self._run_single_experiment()
+            run_results = self._run_single_experiment()
+            
+            # 保存本次运行的结果
+            self.results['runs'].append(run_results)
         
         # 分析多次运行的结果
         self._analyze_multiple_runs()
@@ -206,8 +221,30 @@ class ExperimentRunner:
     def _save_config(self):
         """保存实验配置"""
         config_path = os.path.join(self.config.output_path, 'experiment_config.json')
+        
+        # 将配置转换为可序列化的字典
+        config_dict = {
+            'data_path': str(self.config.data_path),
+            'train_seasons': self.config.train_seasons,
+            'val_season': self.config.val_season,
+            'test_season': self.config.test_season,
+            'budget': self.config.budget,
+            'max_players': self.config.max_players,
+            'num_episodes': self.config.num_episodes,
+            'learning_rate': self.config.learning_rate,
+            'gamma': self.config.gamma,
+            'output_path': str(self.config.output_path),
+            'model': {
+                'hidden_dim': self.config.model.hidden_dim,
+                'num_layers': self.config.model.num_layers,
+                'dropout': self.config.model.dropout,
+                'bidirectional': self.config.model.bidirectional,
+                'use_attention': self.config.model.use_attention
+            }
+        }
+        
         with open(config_path, 'w') as f:
-            json.dump(self.config.to_dict(), f, indent=4)
+            json.dump(config_dict, f, indent=4)
     
     def _run_single_experiment(self):
         """运行单次实验"""
@@ -222,11 +259,22 @@ class ExperimentRunner:
         # 3. 保存和可视化结果
         self._save_results()
         self._visualize_results()
+        
+        return {
+            'train_performance': self.best_reward,
+            'test_performance': self.best_reward,
+            'features': self._collect_features(self.config.train_seasons + [self.config.val_season, self.config.test_season]),
+            'learning_curves': {
+                'train': self.results['training'],
+                'validation': self.results['validation'],
+                'testing': self.results['testing']
+            }
+        }
     
     def _train_model(self):
         """训练模型"""
         print("\nTraining model...")
-        progress_bar = tqdm(range(self.config.training.num_episodes))
+        progress_bar = tqdm(range(self.config.num_episodes))
         
         for episode in progress_bar:
             # 随机选择一个训练赛季
@@ -236,13 +284,18 @@ class ExperimentRunner:
             # 创建符合FPLEnv要求的配置对象
             env_config = ExperimentConfig(
                 data_path=str(data_path),
-                budget=BUDGET,
-                max_players=NUM_PLAYERS
+                train_seasons=self.config.train_seasons,
+                val_season=self.config.val_season,
+                test_season=self.config.test_season,
+                budget=self.config.budget,
+                max_players=self.config.max_players
             )
+            
             print("\nDEBUG: 环境配置对象结构:")
             print(f"类型: {type(env_config)}")
             print(f"包含data_path字段: {'data_path' in env_config.__dict__}")
             print(f"完整配置: {env_config.__dict__}")
+            
             self.env = FPLEnv(env_config)
             
             # 收集经验数据
@@ -256,10 +309,11 @@ class ExperimentRunner:
             loss_dict['total_loss'].backward()
             
             # 梯度裁剪
-            if self.config.training.grad_clip > 0:
+            grad_clip = 1.0  # 设置默认值
+            if grad_clip > 0:
                 torch.nn.utils.clip_grad_norm_(
                     self.model.parameters(), 
-                    self.config.training.grad_clip
+                    grad_clip
                 )
             
             self.optimizer.step()

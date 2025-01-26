@@ -66,6 +66,7 @@ class ExperimentConfig:
     num_episodes: int = 1000
     learning_rate: float = 0.001
     gamma: float = 0.99
+    num_runs: int = 5
     
     # 设备和输出
     device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
