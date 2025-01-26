@@ -39,17 +39,21 @@ class DilatedTCN(nn.Module):
         self.output_dim = hidden_dim * 2 if bidirectional else hidden_dim
         self.output_layer = nn.Linear(self.output_dim, 1)
         
-        # 添加动作选择相关的层
+        # 修改动作头和值函数头的输入维度
+        self.feature_pooling = nn.AdaptiveAvgPool1d(1)  # 添加全局池化层
+        
         self.action_head = nn.Sequential(
             nn.Linear(self.output_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, 1)  # 输出动作概率
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 1)
         )
         
         self.value_head = nn.Sequential(
             nn.Linear(self.output_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, 1)  # 输出状态值
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 1)
         )
         
     def forward(self, x):
@@ -100,7 +104,12 @@ class DilatedTCN(nn.Module):
             state = state.unsqueeze(0)
         
         # 获取特征表示
-        features = self.forward(state)
+        features = self.forward(state)  # [batch_size, seq_len, output_dim]
+        
+        # 全局池化得到固定维度的特征
+        features = features.transpose(1, 2)  # [batch_size, output_dim, seq_len]
+        features = self.feature_pooling(features)  # [batch_size, output_dim, 1]
+        features = features.squeeze(-1)  # [batch_size, output_dim]
         
         # 计算动作概率和状态值
         action_probs = torch.sigmoid(self.action_head(features))
@@ -132,15 +141,20 @@ class DilatedTCN(nn.Module):
         actions = torch.FloatTensor(episode_data['actions'])
         rewards = torch.FloatTensor(episode_data['rewards'])
         
-        # 获取预测值
-        features = self.forward(states)
+        # 获取特征表示
+        features = self.forward(states)  # [batch_size, seq_len, output_dim]
+        
+        # 全局池化
+        features = features.transpose(1, 2)  # [batch_size, output_dim, seq_len]
+        features = self.feature_pooling(features)  # [batch_size, output_dim, 1]
+        features = features.squeeze(-1)  # [batch_size, output_dim]
+        
+        # 计算预测值
         action_probs = torch.sigmoid(self.action_head(features))
         values = self.value_head(features)
         
-        # 计算策略损失
+        # 计算损失
         policy_loss = F.binary_cross_entropy(action_probs, actions)
-        
-        # 计算值函数损失
         value_loss = F.mse_loss(values.squeeze(), rewards)
         
         # 总损失
