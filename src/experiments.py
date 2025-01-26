@@ -97,13 +97,6 @@ class ExperimentRunner:
             lr=config.learning_rate
         )
         
-        # 添加学习率调度器
-        self.scheduler = torch.optim.lr_scheduler.StepLR(
-            self.optimizer, 
-            step_size=100,  # 每100个episode调整一次
-            gamma=0.95  # 学习率衰减因子
-        )
-        
         # 记录最佳性能
         self.best_reward = float('-inf')
         self.best_model_path = os.path.join(
@@ -115,6 +108,31 @@ class ExperimentRunner:
         self.visualizer = VisualizationTool(config.output_path)
         self.analyzer = ResultAnalyzer()
         self.statistical_analyzer = StatisticalAnalyzer()
+        
+        # 初始化训练相关的属性
+        self.episode_rewards = []
+        self.episode_losses = []
+        self.current_season = None
+        
+        # 添加探索率相关属性
+        self.initial_epsilon = 0.5
+        self.min_epsilon = 0.05
+        self.epsilon_decay = 0.995
+        
+        # 创建输出目录
+        os.makedirs(config.output_path, exist_ok=True)
+        
+        # 保存实验配置
+        self._save_config()
+        
+        # 允许用户灵活指定是否使用ILP和Synergy
+        self.use_ilp = config.use_ilp if hasattr(config, 'use_ilp') else False
+        self.use_synergy = config.use_synergy if hasattr(config, 'use_synergy') else False
+        
+        if config.use_triple_captain:
+            self.env.special_cards['triple_captain'] = True
+        if config.use_bench_boost:
+            self.env.special_cards['bench_boost'] = True
     
     def _create_model(self, input_dim: int, model_config: ModelConfig):
         """创建模型"""
@@ -125,7 +143,10 @@ class ExperimentRunner:
             dropout=model_config.dropout,
             bidirectional=model_config.bidirectional,
             use_attention=model_config.use_attention,
-            device=self.config.device
+            device=self.config.device,
+            budget=self.config.budget,
+            use_ilp=getattr(self.config, 'use_ilp', False),
+            use_synergy=getattr(self.config, 'use_synergy', False)
         )
     
     def _collect_features(self, seasons):
@@ -291,24 +312,45 @@ class ExperimentRunner:
         print("Violations: 约束违反次数")
         print("-" * 80)
         
+        # 修改训练参数
+        self.config.num_episodes = 2000  # 增加训练轮数
+        self.config.learning_rate = 1e-4  # 降低学习率
+        
+        # 添加探索率衰减
+        initial_epsilon = 0.5
+        min_epsilon = 0.05
+        epsilon_decay = 0.995
+        
+        # 添加学习率调度器
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer,
+            mode='max',
+            factor=0.5,
+            patience=50,
+            verbose=True
+        )
+        
+        # 早停机制
+        best_reward = float('-inf')
+        patience = 100
+        no_improve_count = 0
+        
         progress_bar = tqdm(range(self.config.num_episodes))
         episode_rewards = []
         episode_losses = []
-        best_reward = float('-inf')
-        min_steps_per_episode = 38  # 确保每个episode至少运行38轮（一个赛季）
         
         for episode in progress_bar:
-            steps = 0
-            total_reward = 0
+            epsilon = max(min_epsilon, initial_epsilon * (epsilon_decay ** episode))
             
-            while steps < min_steps_per_episode:
+            try:
+                # 随机选择一个训练赛季
+                self.current_season = np.random.choice(self.config.train_seasons)
+                
                 # 收集经验数据
                 episode_data = self._collect_episode_data(self.current_season)
+                
                 if episode_data is None:
                     continue
-                
-                steps += len(episode_data['rewards'])
-                total_reward += episode_data['total_reward']
                 
                 # 计算损失并更新模型
                 loss_dict = self.model.compute_loss(episode_data, self.current_season)
@@ -322,13 +364,25 @@ class ExperimentRunner:
                 self.optimizer.step()
                 
                 # 记录训练指标
+                total_reward = episode_data['total_reward']
                 episode_rewards.append(total_reward)
                 episode_losses.append(loss_dict['total_loss'].item())
                 
-                # 更新最佳奖励
+                # 更新最佳奖励和早停计数
                 if total_reward > best_reward:
                     best_reward = total_reward
+                    no_improve_count = 0
                     self._save_checkpoint(episode, is_best=True)
+                else:
+                    no_improve_count += 1
+                
+                # 学习率调度
+                scheduler.step(total_reward)
+                
+                # 早停检查
+                if no_improve_count >= patience:
+                    print(f"\n早停：{patience} 轮没有改善")
+                    break
                 
                 # 更新进度条
                 avg_reward = np.mean(episode_rewards[-100:])
@@ -340,7 +394,7 @@ class ExperimentRunner:
                     f"Avg R: {avg_reward:6.2f} | "
                     f"Best R: {best_reward:6.2f} | "
                     f"Loss: {avg_loss:6.2f} | "
-                    f"Steps: {steps:3d} | "
+                    f"Steps: {len(episode_data['rewards']):3d} | "
                     f"Violations: {episode_data.get('constraint_violations', 0):3d}"
                 )
                 
@@ -348,7 +402,7 @@ class ExperimentRunner:
                 if episode % 10 == 0:
                     print(f"\nEpisode {episode} 详细信息:")
                     print(f"  - 累计奖励: {total_reward:.2f}")
-                    print(f"  - 平均奖励: {total_reward/steps:.2f}")
+                    print(f"  - 平均奖励: {total_reward/len(episode_data['rewards']):.2f}")
                     print(f"  - 约束违反: {episode_data.get('constraint_violations', 0)}")
                     if 'info' in episode_data:
                         print(f"  - 球员价值: {episode_data['info'].get('value', 0):.2f}")
@@ -361,21 +415,10 @@ class ExperimentRunner:
                 # 每100轮保存一次模型
                 if (episode + 1) % 100 == 0:
                     self._save_checkpoint(episode + 1)
-            
-            # 更新最佳奖励
-            if total_reward > best_reward:
-                best_reward = total_reward
-                self._save_checkpoint(episode, is_best=True)
-            
-            # 每100轮保存一次模型
-            if (episode + 1) % 100 == 0:
-                self._save_checkpoint(episode + 1)
-            
-            # 在每个episode结束后更新学习率
-            self.scheduler.step()
-        
-        # 记录最佳奖励
-        self.best_reward = best_reward
+                
+            except Exception as e:
+                print(f"\nError in episode {episode}: {str(e)}")
+                continue
     
     def _evaluate_generalization(self):
         """评估模型的泛化性能"""
@@ -434,9 +477,14 @@ class ExperimentRunner:
             done = False
             total_reward = 0
             
+            # 从训练循环获取当前epsilon值
+            current_episode = len(self.episode_rewards)
+            epsilon = max(self.min_epsilon, 
+                         self.initial_epsilon * (self.epsilon_decay ** current_episode))
+            
             while not done:
-                # 获取动作
-                action = self.model.select_action(state)
+                # 获取动作（传递当前epsilon值）
+                action = self.model.select_action(state, epsilon=epsilon)
                 
                 # 执行动作前打印调试信息
                 print(f"\nDebug - Before step:")

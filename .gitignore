@@ -1,7 +1,7 @@
 # Ignore data files
-data/*
+data/*/
+!data/*/*_processed.csv  # 允许各赛季目录下的处理文件
 !data/README.md
-!data/sample/
 
 # Python
 __pycache__/
@@ -21,7 +21,7 @@ env/
 *.log
 
 # Processed data
-*_processed.csv
+!data/processed/*.csv
 
 # Other
 .DS_Store

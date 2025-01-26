@@ -26,4 +26,8 @@ python3 $PROJECT_ROOT/src/run_experiment.py \
     --num_layers 3 \
     --dropout 0.1 \
     --bidirectional true \
-    --use_attention true
+    --use_attention true \
+    --use_ilp True \
+    --use_synergy True \
+    --use_triple_captain=True \
+    --use_bench_boost=False

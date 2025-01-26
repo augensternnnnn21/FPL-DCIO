@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import random
+from src.models.neural_ilp import NeuralILPSolver
 
 class DilatedTCN(nn.Module):
     """带有扩张的时间卷积网络"""
@@ -13,11 +14,17 @@ class DilatedTCN(nn.Module):
                  dropout: float = 0.1,
                  use_attention: bool = True,
                  bidirectional: bool = True,
-                 device: str = None):  # 添加 device 参数
+                 device: str = None,
+                 budget: float = 100.0,
+                 use_ilp: bool = False,
+                 use_synergy: bool = False):  # 添加预算参数
         super().__init__()
         
-        # 设置设备
+        # 设置设备和预算
         self.device = device if device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.budget = budget  # 添加预算属性
+        self.use_ilp = use_ilp
+        self.use_synergy = use_synergy
         
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
@@ -79,8 +86,12 @@ class DilatedTCN(nn.Module):
         
         # 添加经验回放相关属性
         self.replay_buffer = []
-        self.min_replay_size = 32
-        self.max_buffer_size = 1000
+        self.min_replay_size = 1000
+        self.max_buffer_size = 10000
+        
+        self.gat_fusion = GATFusion(hidden_dim, hidden_dim)  # 或按照实际维度设置
+        
+        self.ilp_solver = NeuralILPSolver(budget=budget, max_per_team=3, total_players=15)
         
     def forward(self, x):
         """
@@ -142,40 +153,101 @@ class DilatedTCN(nn.Module):
         
         return x
 
-    def select_action(self, state):
-        """选择动作"""
+    def select_action(self, state, epsilon=0.2):
+        """选择动作（添加探索机制）"""
+        if random.random() < epsilon:
+            return self._random_action(state)
+        else:
+            return self._model_based_action(state)
+
+    def _model_based_action(self, state):
+        """模型预测选择"""
         with torch.no_grad():
-            # 获取特征和当前可用球员数量
-            features = self.forward(state['player_features'])  # [batch_size, seq_len, hidden_dim]
-            num_players = state['player_features'].shape[0]  # 当前可用球员数量
+            # 1. 基础特征提取
+            features = self.forward(state['player_features'])
             
-            # 获取动作概率
-            action_logits = self.action_head(features)  # [batch_size, seq_len, 1]
-            action_probs = torch.sigmoid(action_logits).squeeze(-1)  # [batch_size, seq_len]
+            # 2. 如果启用协同机制,使用GAT更新特征
+            if self.use_synergy:
+                # 获取协同矩阵
+                synergy_matrix = state['raw_features'].get('synergy_matrix', None)
+                if synergy_matrix is not None:
+                    # 准备输入
+                    features_for_gat = features.squeeze(0).unsqueeze(0)
+                    synergy_tensor = torch.from_numpy(synergy_matrix).float().to(self.device)
+                    adj_matrix = (synergy_tensor > 0).float()
+                    
+                    # 获取位置信息用于位置编码
+                    position_ids = state['position_onehot'].argmax(dim=1).unsqueeze(0)
+                    
+                    # GAT处理
+                    features = self.gat_fusion(
+                        features_for_gat, 
+                        adj_matrix.unsqueeze(0),
+                        position_ids
+                    )
             
-            # 按位置分组选择球员
-            positions = ['GK', 'DEF', 'MID', 'FWD']
-            required_counts = {'GK': 2, 'DEF': 5, 'MID': 5, 'FWD': 3}
-            selected_action = torch.zeros(num_players)
+            # 3. 计算选择概率
+            action_probs = torch.sigmoid(self.action_head(features)).squeeze(0)
             
-            for pos in positions:
-                # 创建位置掩码
-                pos_mask = (state['position_onehot'][:, positions.index(pos)] == 1)
-                pos_probs = action_probs.squeeze(0).clone()
-                pos_probs[~pos_mask] = -float('inf')  # 将非该位置的球员概率设为负无穷
-                
-                # 选择指定数量的该位置最高概率球员
-                k = min(required_counts[pos], pos_mask.sum().item())
-                if k > 0:
-                    topk_values, topk_indices = torch.topk(pos_probs, k)
-                    selected_action[topk_indices] = 1.0
+            # 4. 根据设置选择决策方法
+            if self.use_ilp:
+                selected = self._select_by_ilp(action_probs, state)
+            else:
+                selected = self._select_by_position_and_budget(action_probs, state)
             
-            # 打印调试信息
-            print(f"Debug - Action shape before return: {selected_action.shape}")
-            print(f"Debug - Number of selected players: {selected_action.sum()}")
-            print(f"Debug - Selected positions: {self._count_positions(selected_action, state)}")
-            
-            return selected_action.cpu().numpy()
+            return selected.cpu().numpy()
+
+    def _select_by_position_and_budget(self, action_probs, state):
+        """
+        改为通过ILP解算器进行组合选择
+        """
+        values = state['raw_features']['values']  # 每名球员的价格
+        teams = state['raw_features'].get('names', np.array([]))  # 这里可以放球队信息
+        # 如果存储了球队名称，可以记录 team 列: teams[i] = "Chelsea"
+        # 注意: 若要区分同名球队，需要先做预处理，让 teams 存真正的队伍ID或简写
+
+        # 调用解算器
+        selected_array = self.ilp_solver.solve(action_probs, values, teams)
+
+        return selected_array
+
+    def _select_by_ilp(self, action_probs, state):
+        values = state['raw_features']['values']
+        teams = state['raw_features'].get('names', np.array([]))
+        return self.ilp_solver.solve(action_probs, values, teams)
+
+    def _random_action(self, state):
+        """随机选择符合预算的球员"""
+        values = state['raw_features']['values']
+        positions = state['position_onehot'].argmax(dim=1)
+        
+        # 按位置分组
+        position_groups = {
+            0: [],  # GK
+            1: [],  # DEF
+            2: [],  # MID
+            3: []   # FWD
+        }
+        
+        for i in range(len(positions)):
+            position_groups[positions[i].item()].append(i)
+        
+        # 随机选择符合位置要求的球员
+        selected = np.zeros(len(values))
+        for pos, indices in position_groups.items():
+            k = 2 if pos == 0 else 5 if pos in [1,2] else 3
+            if len(indices) >= k:
+                chosen = np.random.choice(indices, k, replace=False)
+                selected[chosen] = 1
+        
+        # 确保总价值不超过预算
+        total_cost = (selected * values.cpu().numpy()).sum()
+        while total_cost > self.budget and np.sum(selected) > 0:
+            # 移除最贵的球员
+            selected[np.argmax(selected * values.cpu().numpy())] = 0
+            total_cost = (selected * values.cpu().numpy()).sum()
+        
+        return selected
 
     def _count_positions(self, action, state):
         """统计每个位置选择的球员数量"""
@@ -198,53 +270,30 @@ class DilatedTCN(nn.Module):
         return self.forward(state)
     
     def compute_loss(self, batch, current_season):
-        """计算损失"""
+        """计算强化学习损失"""
         try:
-            # 更新经验回放缓冲区
-            self.replay_buffer.append(batch)
-            if len(self.replay_buffer) > self.max_buffer_size:
-                self.replay_buffer.pop(0)
-                
-            if len(self.replay_buffer) < self.min_replay_size:
-                return None
+            states = torch.stack([s['player_features'] for s in batch['states']]).to(self.device)
+            actions = torch.FloatTensor(batch['actions']).to(self.device)
+            rewards = torch.FloatTensor(batch['rewards']).to(self.device)
             
-            # 修改经验回放缓冲区的大小和采样策略
-            self.min_replay_size = 1000  # 增加最小经验数量
-            self.max_buffer_size = 10000  # 增加缓冲区大小
+            # 1. 策略网络损失
+            action_probs = torch.sigmoid(self.action_head(self.forward(states)))
+            policy_loss = F.binary_cross_entropy_with_logits(
+                action_probs, 
+                actions,
+                reduction='none'
+            )
+            policy_loss = (policy_loss * rewards.unsqueeze(-1)).mean()
             
-            # 增加采样数量
-            sample_size = 128  # 增加批量大小
-            samples = random.sample(self.replay_buffer, 
-                                  min(sample_size, len(self.replay_buffer)))
+            # 2. 价值网络损失
+            values = self.value_head(self.forward(states)).squeeze()
+            value_loss = F.mse_loss(values, rewards)
             
-            # 计算策略损失
-            policy_losses = []
-            value_losses = []
-            
-            for sample in samples:
-                states = torch.FloatTensor(sample['states']).to(self.device)
-                actions = torch.FloatTensor(sample['actions']).to(self.device)
-                rewards = torch.FloatTensor(sample['rewards']).to(self.device)
-                
-                # 计算策略损失
-                action_probs = self.forward(states)
-                policy_loss = F.binary_cross_entropy_with_logits(action_probs, actions)
-                policy_losses.append(policy_loss)
-                
-                # 计算价值损失
-                values = self.value_head(self.forward(states)).squeeze()
-                value_loss = F.mse_loss(values, rewards)
-                value_losses.append(value_loss)
-            
-            # 平均损失
-            policy_loss = torch.stack(policy_losses).mean()
-            value_loss = torch.stack(value_losses).mean()
-            
-            # 添加正则化
+            # 3. 正则化
             l2_reg = 0.01 * sum(p.pow(2.0).sum() for p in self.parameters())
             
             # 总损失
-            total_loss = policy_loss + value_loss + l2_reg
+            total_loss = policy_loss + 0.5 * value_loss + l2_reg
             
             return {
                 'policy_loss': policy_loss.item(),

@@ -69,6 +69,12 @@ class FPLEnv(gym.Env):
         
         # 重置环境
         self.reset()
+        
+        # 特殊卡片标记（例：三倍队长、Bench Boost等）
+        self.special_cards = {
+            'triple_captain': False,
+            'bench_boost': False
+        }
     
     def _validate_data(self):
         """验证数据完整性"""
@@ -128,12 +134,10 @@ class FPLEnv(gym.Env):
             raise
     
     def step(self, action):
-        """执行一步"""
+        """执行一步，改为累加得分的方式"""
         try:
-            # 获取当前数据
             current_data = self.data[self.data['gw'] == self.current_gameweek]
-            
-            # 打印调试信息
+            # Debug信息
             print(f"Debug - Environment step:")
             print(f"Action shape: {action.shape}")
             print(f"Current data shape: {len(current_data)}")
@@ -148,8 +152,24 @@ class FPLEnv(gym.Env):
                 else:
                     action = np.pad(action, (0, len(current_data) - len(action)))
             
-            # 计算奖励
-            reward, info = self._calculate_reward(action, current_data)
+            # (1) 计算基础reward（累加玩家得分）
+            base_reward, info = self._calculate_reward(action, current_data)
+            
+            # (2) 如果使用三倍队长卡 -> 仅对队长球员进行三倍
+            if self.special_cards['triple_captain']:
+                # 假设队长是action数组中标记为 captain_index
+                captain_index = self._designate_captain(action, current_data)
+                captain_points = current_data['total_points'].values[captain_index]
+                triple_bonus = 2 * captain_points  # 原本1倍 + 额外2倍
+                base_reward += triple_bonus
+                info['triple_captain_bonus'] = triple_bonus
+            
+            # (3) 如果使用Bench Boost卡 -> 替补也算分(假设替补位是action后几位)
+            if self.special_cards['bench_boost']:
+                bench_indices = self._get_bench_indices(action, current_data)
+                bench_points = np.sum(current_data['total_points'].values[bench_indices])
+                base_reward += bench_points
+                info['bench_boost_bonus'] = bench_points
             
             # 更新状态
             self.current_gameweek += 1
@@ -158,7 +178,7 @@ class FPLEnv(gym.Env):
             # 获取下一个状态
             next_state = None if done else self._get_state()
             
-            return next_state, reward, done, info
+            return next_state, base_reward, done, info
             
         except Exception as e:
             print(f"Error in step: {str(e)}")
@@ -370,18 +390,7 @@ class FPLEnv(gym.Env):
     def _calculate_reward(self, action, current_data):
         """计算奖励"""
         try:
-            # 确保动作和数据维度匹配
-            if len(action) != len(current_data):
-                raise ValueError(f"Action shape {action.shape} does not match data shape {len(current_data)}")
-            
-            # 基础奖励使用对数缩放
-            total_points = np.log1p(np.sum(current_data['total_points'].values * action) + 1e-8)
-            
-            # 动态惩罚系数
-            budget_violation = max(0, np.sum(current_data['value'].values * action) - self.budget)
-            budget_penalty = 0.5 * budget_violation  # 增加惩罚系数
-            
-            # 位置约束使用更严格的惩罚
+            # 检查硬性规则
             position_counts = {
                 'GK': np.sum(action * (current_data['position'] == 'GK')),
                 'DEF': np.sum(action * (current_data['position'] == 'DEF')),
@@ -389,89 +398,117 @@ class FPLEnv(gym.Env):
                 'FWD': np.sum(action * (current_data['position'] == 'FWD'))
             }
             
-            # 更严格的位置惩罚
-            position_penalties = {
-                'GK': 1.0 * abs(2 - position_counts['GK']),  # 必须严格等于2
-                'DEF': 1.0 * abs(5 - position_counts['DEF']), # 必须严格等于5
-                'MID': 1.0 * abs(5 - position_counts['MID']), # 必须严格等于5
-                'FWD': 1.0 * abs(3 - position_counts['FWD'])  # 必须严格等于3
-            }
-            position_penalty = sum(position_penalties.values())
+            total_cost = np.sum(current_data['value'].values * action)
+            total_players = sum(position_counts.values())
             
-            # 如果位置数量不符合要求，给予更大的惩罚
+            # 硬性规则检查
             if (position_counts['GK'] != 2 or 
                 position_counts['DEF'] != 5 or 
                 position_counts['MID'] != 5 or 
-                position_counts['FWD'] != 3):
-                position_penalty *= 2  # 加倍惩罚
+                position_counts['FWD'] != 3 or 
+                total_players != 15 or 
+                total_cost > self.budget):
+                return -100, {'violations': True}
             
-            # 添加球队多样性约束
+            # 新增：检查同队人数限制
             team_counts = {}
-            for team in current_data['team'].values:
-                team_counts[team] = team_counts.get(team, 0) + 1
-            team_penalty = 0.1 * sum(count > 3 for count in team_counts.values())  # 每个球队不超过3名球员
+            for i, row in current_data.iterrows():
+                if action[i] == 1:
+                    t = row['team']
+                    team_counts[t] = team_counts.get(t, 0) + 1
+            # 如果任意球队超过3人，直接判负
+            if any(count > 3 for count in team_counts.values()):
+                return -100, {'violations': True}
             
-            # 最终奖励
-            reward = total_points - budget_penalty - position_penalty - team_penalty
+            # 计算奖励
+            reward = 0
             
-            # 打印奖励相关信息
-            print(f"\nReward Details:")
-            print(f"  Total Points: {total_points:.2f}")
-            print(f"  Budget Penalty: {budget_penalty:.2f}")
-            print(f"  Position Penalty: {position_penalty:.2f}")
-            print(f"  Team Penalty: {team_penalty:.2f}")
-            print(f"  Final Reward: {reward:.2f}")
-            print(f"  Position Counts: {position_counts}")
-            print(f"  Position Requirements: GK=2, DEF=5, MID=5, FWD=3")
-            print(f"  Position Violations: {position_penalties}")
+            # 1. 球员得分奖励
+            points = np.sum(current_data['total_points'].values * action)
+            reward += points
             
-            # 返回详细信息
-            info = {
-                'points': total_points,
-                'value': np.sum(current_data['value'].values * action),
-                'budget': self.budget,
-                'penalties': budget_penalty + position_penalty + team_penalty,
-                'total_reward': reward,
-                'position_counts': position_counts,
-                'position_violations': position_penalties
+            # 2. 球队多样性奖励
+            teams = current_data['team'].values[action == 1]
+            unique_teams = len(np.unique(teams))
+            reward += 0.1 * unique_teams
+            
+            return reward, {
+                'points': points,
+                'unique_teams': unique_teams,
+                'total_cost': total_cost,
+                'violations': False
             }
-            
-            return reward, info
             
         except Exception as e:
             print(f"Error calculating reward: {str(e)}")
-            print(f"Action type: {type(action)}")
-            print(f"Action shape: {action.shape}")
-            print(f"Action value: {action}")
             raise
 
     def _get_state(self):
         """获取当前状态"""
         try:
-            # 获取当前比赛周的数据
             current_data = self.data[self.data['gw'] == self.current_gameweek]
             
-            if len(current_data) == 0:
-                print(f"Warning: No data for gameweek {self.current_gameweek}")
-                return None
-            
-            # 构建状态字典
+            # 基础特征
             state = {
-                'player_features': torch.from_numpy(self._get_state_features(current_data)).float().to(self.device),
-                'position_onehot': torch.from_numpy(self._get_position_onehot(current_data)).float().to(self.device),
-                'team_onehot': self._get_team_onehot(current_data).to(self.device),
+                'player_features': self._get_state_features(current_data),
+                'position_onehot': self._get_position_onehot(current_data),
+                'team_onehot': self._get_team_onehot(current_data),
                 'gameweek': self.current_gameweek,
                 'raw_features': {
-                    'values': torch.from_numpy(current_data['value'].values).float().to(self.device),
-                    'total_points': torch.from_numpy(current_data['total_points'].values).float().to(self.device),
-                    'names': current_data['name'].values
+                    'values': current_data['value'].values,
+                    'total_points': current_data['total_points'].values,
+                    'names': current_data['name'].values,
+                    'teams': current_data['team'].values,
+                    'positions': current_data['position'].values
                 }
             }
+            
+            # 如果启用协同机制,添加协同矩阵
+            if hasattr(self, 'use_synergy') and self.use_synergy:
+                synergy_matrix = self._build_synergy_matrix(current_data)
+                state['raw_features']['synergy_matrix'] = synergy_matrix
             
             return state
             
         except Exception as e:
             print(f"Error in _get_state: {str(e)}")
-            print(f"Current gameweek: {self.current_gameweek}")
-            print(f"Data shape: {self.data.shape if hasattr(self, 'data') else 'No data'}")
             raise
+
+    def _build_synergy_matrix(self, current_data):
+        """构建球员协同矩阵"""
+        n = len(current_data)
+        matrix = np.zeros((n, n))
+        
+        for i in range(n):
+            for j in range(n):
+                if i != j:
+                    # 1. 同队加成
+                    if current_data.iloc[i]['team'] == current_data.iloc[j]['team']:
+                        matrix[i,j] += 0.3
+                    
+                    # 2. 互补位置加成
+                    pos_i = current_data.iloc[i]['position']
+                    pos_j = current_data.iloc[j]['position']
+                    if (pos_i == 'DEF' and pos_j == 'GK') or (pos_i == 'GK' and pos_j == 'DEF'):
+                        matrix[i,j] += 0.2
+                    elif (pos_i == 'MID' and pos_j in ['DEF','FWD']) or (pos_j == 'MID' and pos_i in ['DEF','FWD']):
+                        matrix[i,j] += 0.15
+                    
+                    # 3. 历史配合(可选)
+                    # matrix[i,j] += self._get_historical_synergy(player_i, player_j)
+        
+        return matrix
+
+    def _designate_captain(self, action, current_data):
+        """示例：简单地选出第一个非0的位置作为队长"""
+        selected_indices = np.where(action == 1)[0]
+        if len(selected_indices) > 0:
+            return selected_indices[0]  # 这里可以替换更复杂的逻辑
+        return None
+    
+    def _get_bench_indices(self, action, current_data):
+        """示例：假设后4位是替补"""
+        selected_indices = np.where(action == 1)[0]
+        if len(selected_indices) > 11:  # 先保证首发11人
+            return selected_indices[-4:]
+        return []

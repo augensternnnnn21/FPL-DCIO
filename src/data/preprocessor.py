@@ -276,3 +276,33 @@ class FPLPreprocessor:
         print("样例数据：\n", processed[['id', 'raw_name', 'standard_name', 'short_name']].head())
         
         return processed[['id', 'raw_name', 'standard_name', 'short_name']].drop_duplicates()
+
+def build_synergy_matrix(players_df: pd.DataFrame) -> np.ndarray:
+    """
+    根据球员共同效力记录、国籍、俱乐部等信息生成协同矩阵
+    players_df: 包含所有球员信息的 DataFrame
+    返回: synergy_matrix, 形状 [num_players, num_players]
+    """
+    num_players = len(players_df)
+    synergy_matrix = np.zeros((num_players, num_players), dtype=np.float32)
+    
+    for i in range(num_players):
+        for j in range(num_players):
+            if i == j:
+                synergy_matrix[i, j] = 0.0
+                continue
+            
+            # 示例：同队 +0.3，同国籍 +0.2，近几场共同首发X次 -> +X * 0.05
+            same_team = (players_df.loc[i, 'team'] == players_df.loc[j, 'team'])
+            if same_team:
+                synergy_matrix[i, j] += 0.3
+            
+            same_nat = (players_df.loc[i, 'nationality'] == players_df.loc[j, 'nationality'])
+            if same_nat:
+                synergy_matrix[i, j] += 0.2
+            
+            synergy_matrix[i, j] += 0.05 * min(players_df.loc[i, 'shared_starts'][j], 5)
+    
+    # 归一化(可选)
+    # synergy_matrix = synergy_matrix / synergy_matrix.max()
+    return synergy_matrix

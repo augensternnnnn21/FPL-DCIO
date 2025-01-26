@@ -209,78 +209,60 @@ class GeneralizationMetrics:
         
         return adaptation_rate
 
-def evaluate_generalization(model, train_seasons, test_season, env):
-    """评估模型的泛化性能"""
-    print("\nEvaluating generalization performance...")
-    
-    # 收集训练赛季的表现
-    train_performance = []
-    for season in train_seasons:
-        # 重置环境到指定赛季
-        state = env.reset(season=season)  # 移除对返回值的解包
+def evaluate_generalization(model, env, config, season, num_episodes=10):
+    """评估模型在特定赛季的泛化性能"""
+    try:
+        total_rewards = []
+        total_points = []
+        total_values = []
+        position_violations = []
+        budget_violations = []
         
-        total_reward = 0
-        done = False
-        
-        while not done:
-            # 选择动作
-            action_info = model.select_action(state)
-            action = action_info['action']
+        for episode in range(num_episodes):
+            state = env.reset(season)
+            done = False
+            episode_reward = 0
+            episode_points = 0
+            episode_value = 0
             
-            # 执行动作
-            next_state_info = env.step(action)
-            if isinstance(next_state_info, tuple):
-                if len(next_state_info) == 5:  # 新版本 Gym 返回 (next_state, reward, done, truncated, info)
-                    next_state, reward, done, _, _ = next_state_info
-                else:  # 旧版本返回 (next_state, reward, done, info)
-                    next_state, reward, done, _ = next_state_info
-            else:  # 字典格式
-                next_state = next_state_info['next_state']
-                reward = next_state_info['reward']
-                done = next_state_info['done']
+            while not done:
+                # 获取动作
+                with torch.no_grad():
+                    action = model.select_action(state)
+                
+                # 执行动作
+                next_state, reward, done, info = env.step(action)
+                
+                # 记录结果
+                episode_reward += reward
+                episode_points += info.get('points', 0)
+                episode_value += info.get('value', 0)
+                
+                if not done:
+                    state = next_state
             
-            total_reward += reward
-            state = next_state
+            total_rewards.append(episode_reward)
+            total_points.append(episode_points)
+            total_values.append(episode_value)
+            position_violations.append(info.get('position_violations', {}))
+            budget_violations.append(info.get('budget_violation', 0))
         
-        train_performance.append(total_reward)
-    
-    # 在测试赛季上评估
-    state = env.reset(season=test_season)  # 移除对返回值的解包
-    
-    total_reward = 0
-    done = False
-    
-    while not done:
-        # 选择动作
-        action_info = model.select_action(state)
-        action = action_info['action']
+        # 计算平均值
+        results = {
+            'avg_reward': np.mean(total_rewards),
+            'avg_points': np.mean(total_points),
+            'avg_value': np.mean(total_values),
+            'position_violations': position_violations,
+            'budget_violations': budget_violations,
+            'total_rewards': total_rewards,
+            'total_points': total_points,
+            'total_values': total_values
+        }
         
-        # 执行动作
-        next_state_info = env.step(action)
-        if isinstance(next_state_info, tuple):
-            if len(next_state_info) == 5:  # 新版本 Gym 返回 (next_state, reward, done, truncated, info)
-                next_state, reward, done, _, _ = next_state_info
-            else:  # 旧版本返回 (next_state, reward, done, info)
-                next_state, reward, done, _ = next_state_info
-        else:  # 字典格式
-            next_state = next_state_info['next_state']
-            reward = next_state_info['reward']
-            done = next_state_info['done']
+        return results
         
-        total_reward += reward
-        state = next_state
-    
-    # 计算泛化性指标
-    train_mean = np.mean(train_performance)
-    train_std = np.std(train_performance)
-    generalization_gap = train_mean - total_reward
-    
-    return {
-        'train_performance': {
-            'mean': train_mean,
-            'std': train_std,
-            'raw': train_performance
-        },
-        'test_performance': total_reward,
-        'generalization_gap': generalization_gap
-    } 
+    except Exception as e:
+        print(f"Error in evaluate_generalization: {str(e)}")
+        print(f"Season: {season}")
+        print(f"Episode: {episode}")
+        raise 
