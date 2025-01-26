@@ -1,0 +1,23 @@
+{
+    "data_path": "/Users/zhangyufei/Desktop/FPL-DCIO/data",
+    "train_seasons": [
+        "2016-17",
+        "2017-18",
+        "2018-19"
+    ],
+    "val_season": "2019-20",
+    "test_season": "2020-21",
+    "budget": 100.0,
+    "max_players": 15,
+    "num_episodes": 1000,
+    "learning_rate": 0.001,
+    "gamma": 0.99,
+    "output_path": "/Users/zhangyufei/Desktop/FPL-DCIO/experiments",
+    "model": {
+        "hidden_dim": 128,
+        "num_layers": 3,
+        "dropout": 0.1,
+        "bidirectional": true,
+        "use_attention": true
+    }
+}

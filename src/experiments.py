@@ -13,6 +13,7 @@ from torch import optim
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
 from pathlib import Path
+import time
 
 from config import (
     ExperimentConfig, 
@@ -94,6 +95,13 @@ class ExperimentRunner:
         self.optimizer = optim.Adam(
             self.model.parameters(),
             lr=config.learning_rate
+        )
+        
+        # 添加学习率调度器
+        self.scheduler = torch.optim.lr_scheduler.StepLR(
+            self.optimizer, 
+            step_size=100,  # 每100个episode调整一次
+            gamma=0.95  # 学习率衰减因子
         )
         
         # 记录最佳性能
@@ -274,55 +282,100 @@ class ExperimentRunner:
     
     def _train_model(self):
         """训练模型"""
-        print("\nTraining model...")
+        print("\n[训练日志] 开始训练...")
+        print("\n训练指标说明:")
+        print("Last R: 最近一轮的奖励")
+        print("Avg R: 最近100轮的平均奖励")
+        print("Loss: 平均损失值")
+        print("Steps: 每轮的步数")
+        print("Violations: 约束违反次数")
+        print("-" * 80)
+        
         progress_bar = tqdm(range(self.config.num_episodes))
+        episode_rewards = []
+        episode_losses = []
+        best_reward = float('-inf')
+        min_steps_per_episode = 38  # 确保每个episode至少运行38轮（一个赛季）
         
         for episode in progress_bar:
-            # 随机选择一个训练赛季
-            self.current_season = np.random.choice(self.config.train_seasons)
+            steps = 0
+            total_reward = 0
             
-            # 创建环境配置
-            env_config = ExperimentConfig(
-                data_path=str(os.path.join(self.base_data_path, self.current_season, f"{self.current_season}_processed.csv")),
-                train_seasons=self.config.train_seasons,
-                val_season=self.config.val_season,
-                test_season=self.config.test_season,
-                budget=self.config.budget,
-                max_players=self.config.max_players
-            )
-            
-            self.env = FPLEnv(env_config)
-            
-            # 收集经验数据
-            episode_data = self._collect_episode_data(self.current_season)
-            
-            # 计算损失
-            loss_dict = self.model.compute_loss(episode_data, self.current_season)
-            
-            # 优化器步骤
-            self.optimizer.zero_grad()
-            
-            # 确保损失是标量
-            if isinstance(loss_dict['total_loss'], torch.Tensor):
+            while steps < min_steps_per_episode:
+                # 收集经验数据
+                episode_data = self._collect_episode_data(self.current_season)
+                if episode_data is None:
+                    continue
+                
+                steps += len(episode_data['rewards'])
+                total_reward += episode_data['total_reward']
+                
+                # 计算损失并更新模型
+                loss_dict = self.model.compute_loss(episode_data, self.current_season)
+                if loss_dict is None:
+                    continue
+                
+                # 优化器步骤
+                self.optimizer.zero_grad()
                 loss_dict['total_loss'].backward()
-            else:
-                print(f"Warning: total_loss is not a tensor: {type(loss_dict['total_loss'])}")
-                continue
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+                self.optimizer.step()
+                
+                # 记录训练指标
+                episode_rewards.append(total_reward)
+                episode_losses.append(loss_dict['total_loss'].item())
+                
+                # 更新最佳奖励
+                if total_reward > best_reward:
+                    best_reward = total_reward
+                    self._save_checkpoint(episode, is_best=True)
+                
+                # 更新进度条
+                avg_reward = np.mean(episode_rewards[-100:])
+                avg_loss = np.mean(episode_losses[-100:])
+                
+                progress_bar.set_description(
+                    f"Episode {episode:4d} | "
+                    f"Last R: {total_reward:6.2f} | "
+                    f"Avg R: {avg_reward:6.2f} | "
+                    f"Best R: {best_reward:6.2f} | "
+                    f"Loss: {avg_loss:6.2f} | "
+                    f"Steps: {steps:3d} | "
+                    f"Violations: {episode_data.get('constraint_violations', 0):3d}"
+                )
+                
+                # 每10轮打印详细信息
+                if episode % 10 == 0:
+                    print(f"\nEpisode {episode} 详细信息:")
+                    print(f"  - 累计奖励: {total_reward:.2f}")
+                    print(f"  - 平均奖励: {total_reward/steps:.2f}")
+                    print(f"  - 约束违反: {episode_data.get('constraint_violations', 0)}")
+                    if 'info' in episode_data:
+                        print(f"  - 球员价值: {episode_data['info'].get('value', 0):.2f}")
+                        print(f"  - 总得分: {episode_data['info'].get('points', 0):.2f}")
+                    print(f"  - 策略损失: {loss_dict['policy_loss']:.4f}")
+                    print(f"  - 价值损失: {loss_dict['value_loss']:.4f}")
+                    print(f"  - 正则化: {loss_dict['l2_reg']:.4f}")
+                    print("-" * 50)
+                
+                # 每100轮保存一次模型
+                if (episode + 1) % 100 == 0:
+                    self._save_checkpoint(episode + 1)
             
-            # 梯度裁剪
-            grad_clip = 1.0
-            if grad_clip > 0:
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), grad_clip)
+            # 更新最佳奖励
+            if total_reward > best_reward:
+                best_reward = total_reward
+                self._save_checkpoint(episode, is_best=True)
             
-            self.optimizer.step()
+            # 每100轮保存一次模型
+            if (episode + 1) % 100 == 0:
+                self._save_checkpoint(episode + 1)
             
-            # 记录训练进度
-            self._log_training_progress(episode, {
-                'policy_loss': loss_dict['policy_loss'].item(),
-                'value_loss': loss_dict['value_loss'].item(),
-                'total_loss': loss_dict['total_loss'].item(),
-                'avg_reward': loss_dict['avg_reward']
-            })
+            # 在每个episode结束后更新学习率
+            self.scheduler.step()
+        
+        # 记录最佳奖励
+        self.best_reward = best_reward
     
     def _evaluate_generalization(self):
         """评估模型的泛化性能"""
@@ -369,83 +422,55 @@ class ExperimentRunner:
     
     def _collect_episode_data(self, season):
         """收集一个回合的数据"""
-        states = []
-        actions = []
-        rewards = []
-        next_states = []
-        dones = []
-        
-        # 重置环境
-        state = self.env.reset(season)
-        done = False
-        
-        while not done:
-            # 获取动作
-            action = self.model.select_action(state)
-            
-            # 执行动作
-            next_state, reward, done, _ = self.env.step(action)
-            
-            # 存储当前状态
-            state_dict = {
-                'player_features': state['player_features'].detach().cpu().numpy(),
-                'position_onehot': state['position_onehot'].detach().cpu().numpy(),
-                'team_onehot': state['team_onehot'].detach().cpu().numpy(),
-                'gameweek': state['gameweek'],
-                'raw_features': {
-                    'values': state['raw_features']['values'].detach().cpu().numpy(),
-                    'total_points': state['raw_features']['total_points'].detach().cpu().numpy(),
-                    'names': state['raw_features']['names']
-                }
-            }
-            
-            # 存储下一个状态（如果不是终止状态）
-            if next_state is not None:
-                next_state_dict = {
-                    'player_features': next_state['player_features'].detach().cpu().numpy(),
-                    'position_onehot': next_state['position_onehot'].detach().cpu().numpy(),
-                    'team_onehot': next_state['team_onehot'].detach().cpu().numpy(),
-                    'gameweek': next_state['gameweek'],
-                    'raw_features': {
-                        'values': next_state['raw_features']['values'].detach().cpu().numpy(),
-                        'total_points': next_state['raw_features']['total_points'].detach().cpu().numpy(),
-                        'names': next_state['raw_features']['names']
-                    }
-                }
-            else:
-                # 如果是终止状态，使用当前状态作为下一个状态
-                next_state_dict = state_dict.copy()
-            
-            # 存储转换
-            states.append(state_dict)
-            actions.append(action.cpu().numpy())
-            rewards.append(reward)
-            next_states.append(next_state_dict)
-            dones.append(done)
-            
-            # 更新状态
-            if not done:
-                state = next_state
-        
         try:
-            # 确保所有动作数组具有相同的形状
+            states = []
             actions = []
-            for action in actions:
-                # 将动作转换为二维数组 [1, num_players]
-                if len(action.shape) == 1:
-                    action = action.reshape(1, -1)
-                actions.append(action)
+            rewards = []
+            next_states = []
+            dones = []
+            
+            # 重置环境
+            state = self.env.reset(season)
+            done = False
+            total_reward = 0
+            
+            while not done:
+                # 获取动作
+                action = self.model.select_action(state)
+                
+                # 执行动作前打印调试信息
+                print(f"\nDebug - Before step:")
+                print(f"Action shape from model: {action.shape}")
+                print(f"State shape: {state['player_features'].shape}")
+                
+                # 执行动作
+                next_state, reward, done, info = self.env.step(action)
+                total_reward += reward
+                
+                # 存储转换
+                if state is not None and next_state is not None:
+                    states.append(state)
+                    actions.append(action)
+                    rewards.append(reward)
+                    next_states.append(next_state)
+                    dones.append(done)
+                
+                # 更新状态
+                if not done:
+                    state = next_state
             
             return {
-                'states': np.array(states, dtype=object),
-                'actions': np.array(actions),  # 现在所有动作都是二维的
+                'states': states,
+                'actions': actions,
                 'rewards': np.array(rewards),
-                'next_states': np.array(next_states, dtype=object),
-                'dones': np.array(dones)
+                'next_states': next_states,
+                'dones': np.array(dones),
+                'total_reward': total_reward,
+                'info': info
             }
+        
         except Exception as e:
-            print(f"Error in _collect_episode_data: {str(e)}")
-            print(f"Actions shapes: {[a.shape for a in actions]}")
+            print(f"\nError in _collect_episode_data: {str(e)}")
             raise
     
     def _visualize_results(self):

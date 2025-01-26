@@ -8,7 +8,7 @@ class DilatedTCN(nn.Module):
     """带有扩张的时间卷积网络"""
     def __init__(self, 
                  input_dim: int,
-                 hidden_dim: int,
+                 hidden_dim: int = 128,
                  n_layers: int = 3,  # 使用 n_layers 而不是 num_layers
                  dropout: float = 0.1,
                  use_attention: bool = True,
@@ -27,13 +27,23 @@ class DilatedTCN(nn.Module):
         self.gamma = 0.99  # 添加折扣因子
         
         # 修改输入投影层
-        self.input_proj = nn.Linear(input_dim, hidden_dim)
+        self.input_proj = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim)  # 这里保留LayerNorm因为输入是[batch_size, seq_len, hidden_dim]
+        )
         
-        # 时序卷积层
-        self.conv_layers = nn.ModuleList([
-            nn.Conv1d(hidden_dim, hidden_dim, kernel_size=2, dilation=2**i)
-            for i in range(n_layers)
-        ])
+        # 修改卷积层结构，使用GroupNorm
+        self.conv_layers = nn.ModuleList()
+        for i in range(n_layers):
+            self.conv_layers.append(
+                nn.Sequential(
+                    nn.Conv1d(hidden_dim, hidden_dim, kernel_size=3, 
+                             dilation=2**i, padding=2**i),
+                    nn.GroupNorm(8, hidden_dim),  # 使用8个组进行归一化
+                    nn.ReLU(),
+                    nn.Dropout(dropout)
+                )
+            )
         
         # Dropout层
         self.dropout = nn.Dropout(dropout)
@@ -57,10 +67,8 @@ class DilatedTCN(nn.Module):
         )
         
         self.value_head = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, 1)
+            nn.Linear(hidden_dim, 1),
+            nn.Tanh()  # 限制价值输出范围
         )
         
         # 添加损失函数
@@ -68,6 +76,11 @@ class DilatedTCN(nn.Module):
         
         # 将模型移动到指定设备
         self.to(self.device)
+        
+        # 添加经验回放相关属性
+        self.replay_buffer = []
+        self.min_replay_size = 32
+        self.max_buffer_size = 1000
         
     def forward(self, x):
         """
@@ -104,16 +117,12 @@ class DilatedTCN(nn.Module):
         # 输入投影
         x = self.input_proj(x)  # [batch_size, seq_len, hidden_dim]
         
-        # 转换为卷积格式
+        # 转置为卷积格式
         x = x.transpose(1, 2)  # [batch_size, hidden_dim, seq_len]
         
         # 应用卷积层
         for conv in self.conv_layers:
-            padding = conv.dilation[0] * (conv.kernel_size[0] - 1)
-            x = F.pad(x, (padding, 0))  # 添加填充以保持序列长度
-            x = conv(x)
-            x = torch.relu(x)
-            x = self.dropout(x)
+            x = conv(x)  # 维持 [batch_size, hidden_dim, seq_len]
         
         # 转回序列格式
         x = x.transpose(1, 2)  # [batch_size, seq_len, hidden_dim]
@@ -135,108 +144,47 @@ class DilatedTCN(nn.Module):
 
     def select_action(self, state):
         """选择动作"""
-        try:
-            # 获取特征
+        with torch.no_grad():
+            # 获取特征和当前可用球员数量
             features = self.forward(state['player_features'])  # [batch_size, seq_len, hidden_dim]
+            num_players = state['player_features'].shape[0]  # 当前可用球员数量
             
-            # 全局池化
-            features = features.transpose(1, 2)  # [batch_size, hidden_dim, seq_len]
-            features = self.feature_pooling(features)  # [batch_size, hidden_dim, 1]
-            features = features.squeeze(-1)  # [batch_size, hidden_dim]
+            # 获取动作概率
+            action_logits = self.action_head(features)  # [batch_size, seq_len, 1]
+            action_probs = torch.sigmoid(action_logits).squeeze(-1)  # [batch_size, seq_len]
             
-            # 获取位置信息
-            position_onehot = state['position_onehot']  # [seq_len, 4]
-            values = state['raw_features']['values']
-            num_players = position_onehot.size(0)
+            # 按位置分组选择球员
+            positions = ['GK', 'DEF', 'MID', 'FWD']
+            required_counts = {'GK': 2, 'DEF': 5, 'MID': 5, 'FWD': 3}
+            selected_action = torch.zeros(num_players)
             
-            # 确保 position_onehot 是正确的形状
-            if len(position_onehot.shape) == 2:
-                position_onehot = position_onehot.unsqueeze(0)  # [1, seq_len, 4]
-            
-            # 为每个球员生成动作概率
-            action_probs = []
-            for i in range(num_players):
-                player_features = features.clone()  # [batch_size, hidden_dim]
-                # 生成该球员的动作概率
-                prob = torch.sigmoid(self.action_head(player_features))  # [batch_size, 1]
-                action_probs.append(prob)
-            
-            # 组合所有球员的概率
-            action_probs = torch.cat(action_probs, dim=1)  # [batch_size, num_players]
-            
-            # 创建掩码来满足约束
-            batch_size = position_onehot.size(0)
-            
-            # 初始化动作
-            action = torch.zeros_like(action_probs)
-            
-            # 获取每个位置的球员索引
-            gk_mask = position_onehot[..., 0] == 1  # GK
-            def_mask = position_onehot[..., 1] == 1  # DEF
-            mid_mask = position_onehot[..., 2] == 1  # MID
-            fwd_mask = position_onehot[..., 3] == 1  # FWD
+            for pos in positions:
+                # 创建位置掩码
+                pos_mask = (state['position_onehot'][:, positions.index(pos)] == 1)
+                pos_probs = action_probs.squeeze(0).clone()
+                pos_probs[~pos_mask] = -float('inf')  # 将非该位置的球员概率设为负无穷
+                
+                # 选择指定数量的该位置最高概率球员
+                k = min(required_counts[pos], pos_mask.sum().item())
+                if k > 0:
+                    topk_values, topk_indices = torch.topk(pos_probs, k)
+                    selected_action[topk_indices] = 1.0
             
             # 打印调试信息
-            print(f"\nDEBUG: Shapes:")
-            print(f"action_probs: {action_probs.shape}")
-            print(f"position_onehot: {position_onehot.shape}")
-            print(f"gk_mask: {gk_mask.shape}")
+            print(f"Debug - Action shape before return: {selected_action.shape}")
+            print(f"Debug - Number of selected players: {selected_action.sum()}")
+            print(f"Debug - Selected positions: {self._count_positions(selected_action, state)}")
             
-            print(f"\nDEBUG: Position counts:")
-            print(f"GK count: {gk_mask.sum().item()}")
-            print(f"DEF count: {def_mask.sum().item()}")
-            print(f"MID count: {mid_mask.sum().item()}")
-            print(f"FWD count: {fwd_mask.sum().item()}")
-            
-            # 按照概率排序选择球员
-            for b in range(batch_size):
-                # 选择2名门将
-                gk_probs = action_probs[b][gk_mask[b]]
-                if len(gk_probs) >= 2:  # 确保有足够的门将可选
-                    gk_indices = torch.argsort(gk_probs, descending=True)[:2]
-                    gk_positions = torch.where(gk_mask[b])[0]
-                    action[b][gk_positions[gk_indices]] = 1
-                
-                # 选择5名后卫
-                def_probs = action_probs[b][def_mask[b]]
-                if len(def_probs) >= 5:  # 确保有足够的后卫可选
-                    def_indices = torch.argsort(def_probs, descending=True)[:5]
-                    def_positions = torch.where(def_mask[b])[0]
-                    action[b][def_positions[def_indices]] = 1
-                
-                # 选择5名中场
-                mid_probs = action_probs[b][mid_mask[b]]
-                if len(mid_probs) >= 5:  # 确保有足够的中场可选
-                    mid_indices = torch.argsort(mid_probs, descending=True)[:5]
-                    mid_positions = torch.where(mid_mask[b])[0]
-                    action[b][mid_positions[mid_indices]] = 1
-                
-                # 选择3名前锋
-                fwd_probs = action_probs[b][fwd_mask[b]]
-                if len(fwd_probs) >= 3:  # 确保有足够的前锋可选
-                    fwd_indices = torch.argsort(fwd_probs, descending=True)[:3]
-                    fwd_positions = torch.where(fwd_mask[b])[0]
-                    action[b][fwd_positions[fwd_indices]] = 1
-            
-            # 打印选择结果
-            print(f"\nDEBUG: Selection results:")
-            print(f"Total selected: {action.sum().item()}")
-            print(f"Selected by position:")
-            for b in range(batch_size):
-                print(f"Batch {b}:")
-                print(f"GK: {(action[b] * gk_mask[b]).sum().item()}")
-                print(f"DEF: {(action[b] * def_mask[b]).sum().item()}")
-                print(f"MID: {(action[b] * mid_mask[b]).sum().item()}")
-                print(f"FWD: {(action[b] * fwd_mask[b]).sum().item()}")
-            
-            return action.detach()
-            
-        except Exception as e:
-            print(f"Error in select_action: {str(e)}")
-            print(f"State shape before forward: {state['player_features'].shape}")
-            print(f"Position onehot shape: {state['position_onehot'].shape}")
-            print(f"Action probs shape: {action_probs.shape if 'action_probs' in locals() else 'Not created'}")
-            raise
+            return selected_action.cpu().numpy()
+
+    def _count_positions(self, action, state):
+        """统计每个位置选择的球员数量"""
+        positions = ['GK', 'DEF', 'MID', 'FWD']
+        counts = {}
+        for i, pos in enumerate(positions):
+            pos_mask = (state['position_onehot'][:, i] == 1)
+            counts[pos] = (action * pos_mask).sum().item()
+        return counts
     
     def get_representation(self, state):
         """获取状态表示"""
@@ -249,105 +197,65 @@ class DilatedTCN(nn.Module):
             
         return self.forward(state)
     
-    def compute_loss(self, episode_data, season):
+    def compute_loss(self, batch, current_season):
         """计算损失"""
         try:
-            # 转换状态为张量
-            states = episode_data['states']
-            actions = torch.FloatTensor(episode_data['actions']).to(self.device)
-            rewards = torch.FloatTensor(episode_data['rewards']).to(self.device)
-            next_states = episode_data['next_states']
-            dones = torch.FloatTensor(episode_data['dones']).to(self.device)
-            
-            # 处理状态和下一个状态
-            # 使用填充来处理不同长度的序列
-            max_len = max(s['player_features'].shape[0] for s in states)
-            
-            def pad_features(features, max_len):
-                """填充特征到最大长度"""
-                pad_size = max_len - features.shape[0]
-                if pad_size > 0:
-                    # 创建填充
-                    padding = np.zeros((pad_size,) + features.shape[1:])
-                    # 连接原始特征和填充
-                    return np.concatenate([features, padding], axis=0)
-                return features
-            
-            # 填充并堆叠特征
-            padded_states = np.stack([
-                pad_features(s['player_features'], max_len) for s in states
-            ])
-            padded_next_states = np.stack([
-                pad_features(s['player_features'], max_len) for s in next_states
-            ])
-            
-            # 转换为张量
-            state_features = torch.FloatTensor(padded_states).to(self.device)
-            next_state_features = torch.FloatTensor(padded_next_states).to(self.device)
-            
-            # 创建掩码来忽略填充的部分
-            state_lengths = torch.tensor([
-                s['player_features'].shape[0] for s in states
-            ]).to(self.device)
-            
-            # 计算当前Q值
-            current_q = self.forward(state_features)  # [batch_size, max_len, hidden_dim]
-            
-            # 计算目标Q值
-            with torch.no_grad():
-                next_q = self.forward(next_state_features)  # [batch_size, max_len, hidden_dim]
+            # 更新经验回放缓冲区
+            self.replay_buffer.append(batch)
+            if len(self.replay_buffer) > self.max_buffer_size:
+                self.replay_buffer.pop(0)
                 
-                # 创建掩码
-                mask = torch.arange(max_len).unsqueeze(0).to(self.device) < state_lengths.unsqueeze(1)
-                mask = mask.unsqueeze(-1).float()  # [batch_size, max_len, 1]
-                
-                # 应用掩码
-                next_q = next_q * mask
-                
-                # 对每个序列进行池化
-                next_q = next_q.sum(dim=1) / state_lengths.unsqueeze(1)  # [batch_size, hidden_dim]
-                
-                # 计算目标值
-                target_q = rewards.unsqueeze(-1) + (1 - dones.unsqueeze(-1)) * self.gamma * next_q
+            if len(self.replay_buffer) < self.min_replay_size:
+                return None
             
-            # 对当前Q值也应用相同的掩码和池化
-            current_q = current_q * mask
-            current_q = current_q.sum(dim=1) / state_lengths.unsqueeze(1)  # [batch_size, hidden_dim]
+            # 修改经验回放缓冲区的大小和采样策略
+            self.min_replay_size = 1000  # 增加最小经验数量
+            self.max_buffer_size = 10000  # 增加缓冲区大小
             
-            # 计算策略损失和值函数损失
-            policy_loss = self.criterion(current_q, target_q)
-            value_loss = F.mse_loss(self.value_head(current_q).squeeze(), rewards)
+            # 增加采样数量
+            sample_size = 128  # 增加批量大小
+            samples = random.sample(self.replay_buffer, 
+                                  min(sample_size, len(self.replay_buffer)))
             
-            # 添加正则化损失
+            # 计算策略损失
+            policy_losses = []
+            value_losses = []
+            
+            for sample in samples:
+                states = torch.FloatTensor(sample['states']).to(self.device)
+                actions = torch.FloatTensor(sample['actions']).to(self.device)
+                rewards = torch.FloatTensor(sample['rewards']).to(self.device)
+                
+                # 计算策略损失
+                action_probs = self.forward(states)
+                policy_loss = F.binary_cross_entropy_with_logits(action_probs, actions)
+                policy_losses.append(policy_loss)
+                
+                # 计算价值损失
+                values = self.value_head(self.forward(states)).squeeze()
+                value_loss = F.mse_loss(values, rewards)
+                value_losses.append(value_loss)
+            
+            # 平均损失
+            policy_loss = torch.stack(policy_losses).mean()
+            value_loss = torch.stack(value_losses).mean()
+            
+            # 添加正则化
             l2_reg = 0.01 * sum(p.pow(2.0).sum() for p in self.parameters())
             
-            # 计算总损失
-            total_loss = policy_loss + 0.5 * value_loss + l2_reg
-            
-            # 添加调试信息
-            if total_loss.item() > 100:
-                print(f"\nDEBUG: Loss breakdown:")
-                print(f"Policy loss: {policy_loss.item()}")
-                print(f"Value loss: {value_loss.item()}")
-                print(f"L2 reg: {l2_reg.item()}")
-                print(f"Total loss: {total_loss.item()}")
-                print(f"Average reward: {rewards.mean().item()}")
+            # 总损失
+            total_loss = policy_loss + value_loss + l2_reg
             
             return {
-                'policy_loss': policy_loss,
-                'value_loss': value_loss,
+                'policy_loss': policy_loss.item(),
+                'value_loss': value_loss.item(),
                 'total_loss': total_loss,
-                'avg_reward': rewards.mean().item()
+                'l2_reg': l2_reg.item()
             }
             
         except Exception as e:
             print(f"Error in compute_loss: {str(e)}")
-            print(f"States shapes: {[s['player_features'].shape for s in states]}")
-            print(f"Actions shape: {actions.shape}")
-            print(f"Rewards shape: {rewards.shape}")
-            print(f"Max length: {max_len}")
-            print(f"State lengths: {[s['player_features'].shape[0] for s in states]}")
-            raise
+            return None
 
 class GATFusion(nn.Module):
     """图注意力融合模块"""
