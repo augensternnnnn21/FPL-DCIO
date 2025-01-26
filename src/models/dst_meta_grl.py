@@ -233,78 +233,101 @@ class DynamicSpatioTemporalMetaLearner(nn.Module):
         """选择动作"""
         with torch.no_grad():
             output = self.forward(state)
-            action_probs = output['action_probs']  # [batch_size, num_players, max_players]
+            action_probs = output['action_probs']
             
-            # 获取位置信息和设备
-            device = action_probs.device
+            # 获取位置和价值信息，并确保是PyTorch张量
             if isinstance(state, dict):
                 position_onehot = state['position_onehot']
+                values = state['values']
             else:
-                position_onehot = state[..., :4]  # 假设前4维是位置的one-hot编码
-                if not isinstance(position_onehot, torch.Tensor):
-                    position_onehot = torch.FloatTensor(position_onehot).to(device)
-                if position_onehot.dim() == 2:
-                    position_onehot = position_onehot.unsqueeze(0)
+                position_onehot = state[..., :4]
+                values = state[..., -1]
+            
+            # 转换为PyTorch张量
+            if isinstance(position_onehot, np.ndarray):
+                position_onehot = torch.from_numpy(position_onehot).float()
+            if isinstance(values, np.ndarray):
+                values = torch.from_numpy(values).float()
             
             # 确保维度正确
             if action_probs.dim() == 3:
-                action_probs = action_probs[0]  # [num_players, max_players]
+                action_probs = action_probs[0]
+            if position_onehot.dim() == 3:
+                position_onehot = position_onehot[0]
+            if isinstance(values, torch.Tensor) and values.dim() == 2:
+                values = values[0]
+            
+            print(f"\nDimension check:")
+            print(f"position_onehot shape: {position_onehot.shape}")
+            print(f"values shape: {values.shape}")
+            print(f"action_probs shape: {action_probs.shape}")
             
             # 初始化选择
             num_players = action_probs.size(0)
+            device = action_probs.device
             action = torch.zeros(num_players, dtype=torch.bool, device=device)
             
-            # 为每个位置选择球员
+            # 阵容要求
             required_counts = {'GK': 2, 'DEF': 5, 'MID': 5, 'FWD': 3}
             position_indices = {'GK': 0, 'DEF': 1, 'MID': 2, 'FWD': 3}
             
             print("\nPosition selection:")
-            print(f"position_onehot shape: {position_onehot.shape}")
-            
-            # 第一轮：尝试按要求选择每个位置的球员
+            positions_priority = ['GK', 'DEF', 'MID', 'FWD']
             selected_by_position = {}
-            for pos, count in required_counts.items():
-                pos_idx = position_indices[pos]
-                pos_mask = position_onehot[0, :, pos_idx] == 1
-                
-                # 初始化该位置的选择数量
-                num_to_select = 0
-                selected_by_position[pos] = 0
-                
-                if pos_mask.any():
-                    # 计算该位置球员的得分
-                    pos_scores = action_probs[pos_mask].mean(dim=1)
-                    num_available = pos_mask.sum().item()
-                    num_to_select = min(count, num_available)
-                    
-                    if num_to_select > 0:
-                        _, indices = torch.topk(pos_scores, k=num_to_select)
-                        pos_players = torch.where(pos_mask)[0][indices]
-                        action[pos_players] = True
-                        selected_by_position[pos] = num_to_select
-                
-                print(f"{pos}: found {pos_mask.sum().item()} players, selected {num_to_select}")
+            total_value = 0
             
-            # 第二轮：如果某个位置的球员不足，从其他位置补充
-            total_selected = action.sum().item()
-            if total_selected < 15:
-                remaining = 15 - total_selected
-                print(f"\nNeed {remaining} more players")
+            # 第一步：确保每个位置至少有最低要求的人数
+            for pos in positions_priority:
+                pos_idx = position_indices[pos]
+                # 修改这里：直接使用2维索引
+                pos_mask = position_onehot[:, pos_idx] == 1
+                required = required_counts[pos]
                 
-                # 从未选择的球员中选择
-                unselected_mask = ~action
-                if unselected_mask.any():
-                    unselected_scores = action_probs[unselected_mask].mean(dim=1)
-                    num_to_add = min(remaining, unselected_mask.sum().item())
-                    _, indices = torch.topk(unselected_scores, k=num_to_add)
-                    additional_players = torch.where(unselected_mask)[0][indices]
-                    action[additional_players] = True
-                    print(f"Added {num_to_add} additional players")
+                if not pos_mask.any():
+                    print(f"Warning: No {pos} players available!")
+                    return None
+                
+                # 获取该位置所有球员的价值和概率
+                pos_values = values[pos_mask]
+                pos_probs = action_probs[pos_mask].mean(dim=1)
+                
+                # 计算性价比分数
+                value_per_point = pos_probs / (pos_values + 1e-6)
+                
+                # 选择所需数量的球员
+                num_available = pos_mask.sum().item()
+                num_to_select = min(required, num_available)
+                
+                if num_to_select < required:
+                    print(f"Warning: Not enough {pos} players! Need {required}, found {num_available}")
+                    return None
+                
+                # 根据性价比选择球员
+                _, indices = torch.topk(value_per_point, k=num_to_select)
+                pos_players = torch.where(pos_mask)[0][indices]
+                
+                # 更新选择
+                action[pos_players] = True
+                selected_by_position[pos] = num_to_select
+                total_value += pos_values[indices].sum().item()
+                
+                print(f"{pos}: found {num_available} players, selected {num_to_select}")
+            
+            # 检查预算约束
+            if total_value > 100:
+                print(f"Warning: Total value ({total_value:.1f}) exceeds budget!")
+                return None
+            
+            # 检查是否满足最低要求
+            total_selected = action.sum().item()
+            if total_selected != 15:
+                print(f"Warning: Could only select {total_selected} players")
+                return None
             
             # 打印最终选择结果
             print("\nFinal selection:")
-            final_count = action.sum().item()
-            print(f"Total players: {final_count}")
+            print(f"Total players: {total_selected}")
+            print(f"Total value: {total_value:.1f}")
             for pos, count in selected_by_position.items():
                 print(f"{pos}: {count} players")
             
