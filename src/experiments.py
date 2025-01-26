@@ -12,22 +12,22 @@ import random
 from torch import optim
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
+from pathlib import Path
 
 from config import (
     ExperimentConfig, 
     PROJECT_ROOT,
     BUDGET,
     NUM_PLAYERS,
+    DEFAULT_CONFIG,
+    COVID_CONFIG,
+    ModelConfig
 )
 from environment import FPLEnv
-from models import DynamicSpatioTemporalMetaLearner
+from models.st_conv import DilatedTCN
 from utils.visualization import VisualizationTool, ResultAnalyzer
 from utils.statistical_analysis import StatisticalAnalyzer
 from models.generalization import evaluate_generalization
-
-from models.dst_meta_grl import DynamicSpatioTemporalMetaLearner
-
-
 
 class ExperimentRunner:
     """实验运行器"""
@@ -39,66 +39,61 @@ class ExperimentRunner:
         """
         print("\nDEBUG: ExperimentRunner init...")
         
-        # 基础配置
-        self.config = config
-        self.base_data_path = config.data_path  # 使用配置中的data_path
+        # 保存基础配置
+        self.base_config = config
+        self.base_data_path = Path(config.data_path)
         print(f"Base data path: {self.base_data_path}")
         
-        # 确保输出目录存在
-        os.makedirs(config.output_path, exist_ok=True)
-        
-        # 初始化结果存储
-        self.results = {
-            'training': {},
-            'validation': {},
-            'testing': {},
-            'generalization': {}
-        }
-        
-        # 初始化环境
+        # 创建环境
         print("\nDEBUG: Creating environment...")
-        self.current_season = config.train_seasons[0]  # 初始化为第一个训练赛季
-        data_path = os.path.join(self.base_data_path, self.current_season, f"{self.current_season}_processed.csv")
+        season = config.train_seasons[0]  # 使用第一个训练赛季
+        season_path = self.base_data_path / season / f"{season}_processed.csv"
+        print(f"Full data path: {season_path}")
+        print(f"File exists: {season_path.exists()}")
         
-        # 验证数据文件存在
-        if not os.path.exists(data_path):
-            raise FileNotFoundError(f"Data file not found: {data_path}")
+        # 创建环境配置
+        env_config = ExperimentConfig(
+            data_path=str(season_path),
+            train_seasons=config.train_seasons,
+            val_season=config.val_season,
+            test_season=config.test_season,
+            budget=config.budget,
+            max_players=config.max_players,
+            num_episodes=config.num_episodes,
+            learning_rate=config.learning_rate,
+            gamma=config.gamma,
+            output_path=config.output_path,
+            model=config.model
+        )
         
-        print(f"Full data path: {data_path}")
-        print(f"File exists: {os.path.exists(data_path)}")
+        print("\nDEBUG: 环境配置对象结构:")
+        print(f"类型: {type(env_config)}")
+        print(f"包含data_path字段: {'data_path' in env_config.__dict__}")
+        print(f"完整配置: {env_config.__dict__}")
         
         try:
-            # 创建临时配置对象
-            env_config = ExperimentConfig(
-                data_path=str(data_path),
-                budget=BUDGET,
-                max_players=NUM_PLAYERS
-            )
-            print("\nDEBUG: 环境配置对象结构:")
-            print(f"类型: {type(env_config)}")
-            print(f"包含data_path字段: {'data_path' in env_config.__dict__}")
-            print(f"完整配置: {env_config.__dict__}")
             self.env = FPLEnv(env_config)
         except Exception as e:
             print(f"Failed to create environment: {str(e)}")
             raise
         
-        # 获取输入维度
+        # 获取初始状态以确定输入维度
         initial_state = self.env.reset()
         input_dim = initial_state.shape[-1] if isinstance(initial_state, np.ndarray) else initial_state['player_features'].shape[-1]
         print(f"\nDetermined input dimension: {input_dim}")
         
         # 创建模型
         print("\nDEBUG: Creating model...")
-        self.model = DynamicSpatioTemporalMetaLearner(
-            input_dim=input_dim,
-            hidden_dim=config.model.hidden_dim
-        ).to(config.device)
+        try:
+            self.model = self._create_model(input_dim, config.model)
+        except Exception as e:
+            print(f"Failed to create model: {str(e)}")
+            raise
         
         # 创建优化器
         self.optimizer = optim.Adam(
             self.model.parameters(),
-            lr=config.training.learning_rate
+            lr=config.learning_rate
         )
         
         # 记录最佳性能
@@ -112,6 +107,17 @@ class ExperimentRunner:
         self.visualizer = VisualizationTool(config.output_path)
         self.analyzer = ResultAnalyzer()
         self.statistical_analyzer = StatisticalAnalyzer()
+    
+    def _create_model(self, input_dim: int, model_config: ModelConfig):
+        """创建模型"""
+        return DilatedTCN(
+            input_dim=input_dim,
+            hidden_dim=model_config.hidden_dim,
+            n_layers=model_config.num_layers,
+            dropout=model_config.dropout,
+            bidirectional=model_config.bidirectional,
+            use_attention=model_config.use_attention
+        ).to(self.base_config.device)
     
     def _collect_features(self, seasons):
         """收集特定赛季的特征"""

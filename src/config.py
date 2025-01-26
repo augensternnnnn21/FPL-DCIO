@@ -18,13 +18,11 @@ NUM_PLAYERS = 15  # 最大球员数量
 @dataclass
 class ModelConfig:
     """模型配置"""
-    input_dim: int = 12
-    hidden_dim: int = 64
-    num_heads: int = 4
-    num_layers: int = 2
+    hidden_dim: int = 128
+    num_layers: int = 3
     dropout: float = 0.1
-    temporal_window: int = 5
-    max_players: int = 600
+    bidirectional: bool = True
+    use_attention: bool = True
 
 @dataclass
 class TrainingConfig:
@@ -53,40 +51,57 @@ class GeneralizationConfig:
 
 @dataclass
 class ExperimentConfig:
-    """实验配置参数（最终确认版）"""
-    data_path: str  # 必须作为第一个参数
+    """实验配置"""
+    # 数据相关
+    data_path: str
+    train_seasons: List[str]
+    val_season: str
+    test_season: str
+    
+    # 环境相关
     budget: float = 100.0
     max_players: int = 15
+    
+    # 训练相关
     num_episodes: int = 1000
     learning_rate: float = 0.001
     gamma: float = 0.99
     
-    # 环境相关参数
-    output_path: str = field(
-        default_factory=lambda: os.path.join(PROJECT_ROOT, 'experiments')
-    )
-    device: torch.device = field(
-        default_factory=lambda: torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    )
+    # 设备和输出
+    device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    output_path: str = 'experiments'
     random_seed: int = 42
     
-    # 数据分割参数
-    train_seasons: List[str] = field(default_factory=lambda: [
-        '2016-17', '2017-18', '2018-19'
-    ])
-    val_season: str = '2019-20'
-    test_season: str = '2020-21'
-    
+    # 模型配置
+    model: ModelConfig = ModelConfig()
+
     def __post_init__(self):
-        print(f"\nDEBUG: ExperimentConfig实例化参数:")
-        print(f"data_path类型: {type(self.data_path)}")
-        print(f"data_path值: {self.data_path}")
-        print(f"所有字段: {self.__dict__}")
+        """初始化后的处理"""
+        # 确保路径格式正确
+        self.data_path = str(self.data_path)
+        self.output_path = str(self.output_path)
+        
+        # 验证配置
+        self._validate_config()
+    
+    def _validate_config(self):
+        """验证配置参数"""
+        if self.budget <= 0:
+            raise ValueError(f"预算必须为正数: {self.budget}")
+        if self.max_players <= 0:
+            raise ValueError(f"最大球员数必须为正数: {self.max_players}")
+        if self.num_episodes <= 0:
+            raise ValueError(f"训练回合数必须为正数: {self.num_episodes}")
+        if not (0 <= self.gamma <= 1):
+            raise ValueError(f"折扣因子必须在[0,1]范围内: {self.gamma}")
 
 def get_default_config() -> ExperimentConfig:
     """获取默认配置"""
     return ExperimentConfig(
-        data_path=os.path.join(PROJECT_ROOT, 'data')  # 添加默认数据路径
+        data_path=os.path.join(PROJECT_ROOT, 'data'),  # 添加默认数据路径
+        train_seasons=['2016-17', '2017-18', '2018-19'],
+        val_season='2019-20',
+        test_season='2020-21'
     )
 
 # 为了保持向后兼容

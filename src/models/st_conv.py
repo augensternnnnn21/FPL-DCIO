@@ -4,76 +4,75 @@ import torch.nn.functional as F
 
 class DilatedTCN(nn.Module):
     """带有扩张的时间卷积网络"""
-    def __init__(self, input_dim, hidden_dim=64, kernel_size=3, dilation=1):
+    def __init__(self, 
+                 input_dim: int,
+                 hidden_dim: int,
+                 n_layers: int = 3,  # 使用 n_layers 而不是 num_layers
+                 dropout: float = 0.1,
+                 use_attention: bool = True,
+                 bidirectional: bool = True):
         super().__init__()
+        
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
-        self.kernel_size = kernel_size
-        self.dilation = dilation
+        self.n_layers = n_layers
+        self.use_attention = use_attention
+        self.bidirectional = bidirectional
         
-        # 添加padding以保持输入输出维度一致
-        padding = (kernel_size - 1) * dilation // 2
+        # 输入投影层
+        self.input_proj = nn.Linear(input_dim, hidden_dim)
         
-        self.conv1 = nn.Conv1d(
-            in_channels=input_dim,
-            out_channels=hidden_dim,
-            kernel_size=kernel_size,
-            dilation=dilation,
-            padding=padding
-        )
+        # 时序卷积层
+        self.conv_layers = nn.ModuleList([
+            nn.Conv1d(hidden_dim, hidden_dim, kernel_size=2, dilation=2**i)
+            for i in range(n_layers)
+        ])
         
-        self.conv2 = nn.Conv1d(
-            in_channels=hidden_dim,
-            out_channels=input_dim,
-            kernel_size=1,
-            padding=0
-        )
+        # Dropout层
+        self.dropout = nn.Dropout(dropout)
         
-        # 修改 LayerNorm 的维度设置
-        self.norm = nn.LayerNorm(hidden_dim)
-        self.activation = nn.ReLU()
-    
+        # 注意力机制
+        if use_attention:
+            self.attention = nn.MultiheadAttention(hidden_dim, num_heads=4)
+        
+        # 输出层
+        self.output_dim = hidden_dim * 2 if bidirectional else hidden_dim
+        self.output_layer = nn.Linear(self.output_dim, 1)
+        
     def forward(self, x):
-        """
-        前向传播
-        Args:
-            x: [batch_size, num_players, input_dim]
-        """
-        # 调整维度顺序
-        x = x.transpose(1, 2)  # [batch_size, input_dim, num_players]
+        # 输入形状: [batch_size, seq_len, input_dim]
+        batch_size, seq_len, _ = x.shape
         
-        # 保存输入用于残差连接
-        identity = x
+        # 输入投影
+        x = self.input_proj(x)  # [batch_size, seq_len, hidden_dim]
         
-        # 第一次卷积
-        out = self.conv1(x)
+        # 转换为卷积格式
+        x = x.transpose(1, 2)  # [batch_size, hidden_dim, seq_len]
         
-        # 转换维度进行归一化
-        out = out.transpose(1, 2)  # [batch_size, num_players, hidden_dim]
-        out = self.norm(out)
-        out = out.transpose(1, 2)  # [batch_size, hidden_dim, num_players]
+        # 应用卷积层
+        for conv in self.conv_layers:
+            x = conv(x)
+            x = torch.relu(x)
+            x = self.dropout(x)
         
-        # 激活函数
-        out = self.activation(out)
+        # 转回序列格式
+        x = x.transpose(1, 2)  # [batch_size, seq_len, hidden_dim]
         
-        # 第二次卷积
-        out = self.conv2(out)
+        # 应用注意力机制
+        if self.use_attention:
+            x, _ = self.attention(x, x, x)
         
-        # 确保维度匹配
-        if out.size() != identity.size():
-            identity = F.pad(
-                identity,
-                (0, out.size(-1) - identity.size(-1)),
-                mode='replicate'
-            )
+        # 如果是双向，连接正向和反向特征
+        if self.bidirectional:
+            forward = x
+            backward = torch.flip(x, [1])
+            x = torch.cat([forward, backward], dim=-1)
         
-        # 残差连接
-        out = out + identity
+        # 输出层
+        x = self.output_layer(x)  # [batch_size, seq_len, 1]
+        x = torch.sigmoid(x)
         
-        # 恢复维度顺序
-        out = out.transpose(1, 2)  # [batch_size, num_players, input_dim]
-        
-        return out
+        return x.squeeze(-1)  # [batch_size, seq_len]
 
 class GATFusion(nn.Module):
     """图注意力融合模块"""

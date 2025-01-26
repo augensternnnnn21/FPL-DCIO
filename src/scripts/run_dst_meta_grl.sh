@@ -1,19 +1,29 @@
-#!/bin/zsh
+#!/bin/bash
 
-# 添加路径验证
-DATA_PATH="$HOME/Desktop/FPL-DCIO/data"
-if [ ! -d "$DATA_PATH" ]; then
-    echo "❌ 数据目录不存在: $DATA_PATH"
-    exit 1
-fi
+# 设置项目根目录
+export PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+echo "DEBUG: Initial PROJECT_ROOT: $PROJECT_ROOT"
 
-# 增强Python路径设置
-export PYTHONPATH="$PYTHONPATH:$HOME/Desktop/FPL-DCIO/src"
-cd "$HOME/Desktop/FPL-DCIO/src" || exit 1
+# 激活Python环境（如果需要）
+# source $PROJECT_ROOT/venv/bin/activate
 
-# 添加执行前清理
-find . -name "__pycache__" -exec rm -rf {} +
-find . -name "*.pyc" -exec rm -f {} +
+# 设置PYTHONPATH
+export PYTHONPATH=$PROJECT_ROOT:$PYTHONPATH
 
-# 运行主程序
-python3 run_experiment.py --data_path "$DATA_PATH"
+# 运行实验
+python3 $PROJECT_ROOT/src/run_experiment.py \
+    --data_path "$PROJECT_ROOT/data" \
+    --output_path "$PROJECT_ROOT/experiments" \
+    --budget 100.0 \
+    --max_players 15 \
+    --num_episodes 1000 \
+    --learning_rate 0.001 \
+    --gamma 0.99 \
+    --train_seasons "2016-17" "2017-18" "2018-19" \
+    --val_season "2019-20" \
+    --test_season "2020-21" \
+    --hidden_dim 128 \
+    --num_layers 3 \
+    --dropout 0.1 \
+    --bidirectional true \
+    --use_attention true

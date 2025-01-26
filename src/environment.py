@@ -145,19 +145,34 @@ class FPLEnv(gym.Env):
         """获取当前状态"""
         current_data = self.data[self.data['gw'] == self.current_gameweek]
         
-        # 构建特征矩阵
-        features = current_data[['value', 'total_points', 'minutes', 'goals_scored',
-                               'assists', 'clean_sheets', 'goals_conceded']].values
+        # 构建球员特征矩阵
+        feature_columns = [
+            'value', 'total_points', 'minutes', 'goals_scored',
+            'assists', 'clean_sheets', 'goals_conceded'
+        ]
+        player_features = current_data[feature_columns].values
         
-        # 添加位置和球队的独热编码
+        # 获取位置和球队的独热编码
         position_onehot = self._get_position_onehot(current_data)
         team_onehot = self._get_team_onehot(current_data)
         
+        # 合并所有特征
+        all_features = np.concatenate([
+            player_features,
+            position_onehot.numpy(),
+            team_onehot.numpy()
+        ], axis=1)
+        
         return {
-            'features': torch.from_numpy(features).float().to(self.device),
+            'player_features': torch.from_numpy(all_features).float().to(self.device),
             'position_onehot': position_onehot.to(self.device),
             'team_onehot': team_onehot.to(self.device),
-            'gameweek': self.current_gameweek
+            'gameweek': self.current_gameweek,
+            'raw_features': {
+                'values': torch.from_numpy(current_data['value'].values).float().to(self.device),
+                'total_points': torch.from_numpy(current_data['total_points'].values).float().to(self.device),
+                'names': current_data['name'].values
+            }
         }
     
     def _get_position_onehot(self, data: pd.DataFrame) -> torch.Tensor:
