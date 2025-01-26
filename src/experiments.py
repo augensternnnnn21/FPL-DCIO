@@ -225,28 +225,32 @@ class ExperimentRunner:
         torch.save(self.results, save_path)
         print(f"\nSaved results to {save_path}")
     
-    def run_experiments(self):
-        """运行实验"""
-        # 保存实验配置
-        self._save_config()
+    def run_experiments(self, num_runs=5):
+        """运行多次实验以获得统计显著性"""
+        print(f"\nStarting {num_runs} experimental runs...")
         
-        # 多次运行以获得统计显著性
-        num_runs = getattr(self.config, 'num_runs', 5)  # 如果没有设置，默认为5次
+        all_results = []
         for run in range(num_runs):
-            print(f"\nStarting Run {run + 1}/{num_runs}")
-            
-            # 重置随机种子
-            torch.manual_seed(self.config.random_seed + run)
-            np.random.seed(self.config.random_seed + run)
-            
-            # 运行单次实验
-            run_results = self._run_single_experiment()
-            
-            # 保存本次运行的结果
-            self.results['runs'].append(run_results)
+            print(f"\nRun {run + 1}/{num_runs}")
+            try:
+                # 设置随机种子
+                seed = getattr(self.config, 'random_seed', 42) + run
+                torch.manual_seed(seed)
+                np.random.seed(seed)
+                
+                # 运行单次实验
+                result = self.run()
+                all_results.append(result)
+                
+            except Exception as e:
+                print(f"Error in run {run + 1}: {str(e)}")
+                continue
         
         # 分析多次运行的结果
-        self._analyze_multiple_runs()
+        if all_results:
+            self._analyze_multiple_runs(all_results)
+        
+        return all_results
     
     def _save_config(self):
         """保存实验配置"""
@@ -614,6 +618,32 @@ class ExperimentRunner:
             f.write(report)
         
         return analysis_results
+
+    def run(self):
+        """运行实验的主入口点"""
+        print("\nStarting experiment...")
+        
+        try:
+            # 1. 训练模型
+            print("\n[1/3] Training model...")
+            self._train_model()
+            
+            # 2. 评估泛化性能
+            print("\n[2/3] Evaluating generalization...")
+            self._evaluate_generalization()
+            
+            # 3. 保存和可视化结果
+            print("\n[3/3] Saving and visualizing results...")
+            self._save_results()
+            self._visualize_results()
+            
+            print("\nExperiment completed successfully!")
+            
+        except Exception as e:
+            print(f"\nError during experiment: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
 
 def main():
     # 使用不同的配置运行实验
