@@ -8,6 +8,8 @@ from replay_buffer import ReplayBuffer
 from config import *
 import time
 from datetime import datetime
+import random
+import torch.optim as optim
 
 def print_progress(episode, total_episodes, reward, epsilon, loss, avg_reward):
     """打印训练进度"""
@@ -115,17 +117,12 @@ def _model_based_action(model, state, env):
         pos_requirements = {'GK': 2, 'DEF': 5, 'MID': 5, 'FWD': 3}
         selected_indices = set()
         
-        # 获取当前比赛周可用的球员
-        current_gw_data = env.data[env.data['gw'] == env.current_gw]
-        available_players = set(current_gw_data['name'])
-        
         # 按位置选择球员
         for pos, required_count in pos_requirements.items():
+            # 获取该位置所有合法候选人
             candidates = []
             for i in range(env.num_players):
-                player_name = env.inverse_id_map.get(i)
                 if (i not in selected_indices and  # 未被选择
-                    player_name in available_players and  # 当前比赛周可用
                     env.data['position'].iloc[i] == pos and  # 位置匹配
                     env.data['value'].iloc[i] <= budget_remaining):  # 预算充足
                     candidates.append(i)
@@ -205,121 +202,134 @@ def _fallback_action(env):
     
     return np.array(action)
 
-def train(season="2016-17"):
-    env = FPLEnv(season=season, verbose=False)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def train():
+    # 定义训练集和测试集赛季
+    train_seasons = ["2016-17", "2017-18", "2018-19", "2019-20", "2020-21", "2021-22", "2022-23"]
+    test_season = "2023-24"
     
-    # 构建增强型邻接矩阵
-    adj = torch.zeros(NUM_PLAYERS, NUM_PLAYERS)
-    team_map = env.data.groupby('name')['team'].first().to_dict()
-    pos_map = env.data.groupby('name')['position'].first().to_dict()
-    values = env.data.groupby('name')['value'].first().to_dict()
+    print("初始化训练环境...")
+    # 创建多个训练环境
+    train_envs = []
+    for season in train_seasons:
+        try:
+            env = FPLEnv(season=season, verbose=False)
+            train_envs.append(env)
+            print(f"成功加载 {season} 赛季数据")
+        except Exception as e:
+            print(f"警告: 加载 {season} 赛季数据失败: {str(e)}")
     
-    for i in range(NUM_PLAYERS):
-        for j in range(i+1, NUM_PLAYERS):
-            same_team = team_map[env.data['name'].iloc[i]] == team_map[env.data['name'].iloc[j]]
-            same_pos = pos_map[env.data['name'].iloc[i]] == pos_map[env.data['name'].iloc[j]]
-            price_diff = abs(values[env.data['name'].iloc[i]] - values[env.data['name'].iloc[j]]) < 2.0
-            if (same_team or same_pos) and price_diff:
-                adj[i,j] = adj[j,i] = 1
-
-    model = DCIO(adj.to(device), env.data).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    replay_buffer = ReplayBuffer(REPLAY_BUFFER_SIZE)
-
+    if not train_envs:
+        raise ValueError("没有成功加载任何训练赛季数据")
+    
+    # 使用第一个环境的状态维度来初始化模型
+    state_dim = train_envs[0].observation_space.shape[0]
+    action_dim = train_envs[0].action_space.n
+    
+    print(f"状态维度: {state_dim}, 动作维度: {action_dim}")
+    
+    # 初始化模型和优化器
+    policy_net = DCIO(torch.zeros(NUM_PLAYERS, NUM_PLAYERS), train_envs[0].data).to(device)
+    target_net = DCIO(torch.zeros(NUM_PLAYERS, NUM_PLAYERS), train_envs[0].data).to(device)
+    target_net.load_state_dict(policy_net.state_dict())
+    
+    optimizer = optim.Adam(policy_net.parameters(), lr=LEARNING_RATE)
+    memory = ReplayBuffer(REPLAY_BUFFER_SIZE)
+    
     # 训练循环
-    rewards_history = []
-    
-    # 初始化epsilon
+    total_steps = 0
     epsilon = EPSILON_START
     
-    # 预填充经验池
-    state, _ = env.reset()
-    state = torch.FloatTensor(state).to(device)
-    while len(replay_buffer) < MIN_REPLAY_SIZE:
-        action = select_action(model, state, epsilon, env)  # 使用初始epsilon
-        next_state, reward, done, _, _ = env.step(action)
-        next_state = torch.FloatTensor(next_state).to(device)
-        replay_buffer.push(state.cpu().numpy(), action, reward, next_state.cpu().numpy(), done)
-        state = next_state if not done else torch.FloatTensor(env.reset()[0]).to(device)
-
-    # 主训练循环
+    print("开始训练...")
     for episode in range(TOTAL_EPISODES):
-        epsilon = adjust_epsilon(episode)
-        state, _ = env.reset()
-        state = torch.FloatTensor(state).to(device)
-        total_reward = 0
-        episode_loss = 0
+        # 随机选择一个训练环境
+        env = random.choice(train_envs)
+        state = env.reset()
+        episode_reward = 0
         
-        while True:
-            action = select_action(model, state, epsilon, env)
-            
-            # 每10个episode打印一次详细信息
-            if episode % 10 == 0:
-                print_team_info(env, action, epsilon=epsilon, episode=episode)
-                
-            next_state, reward, done, _, _ = env.step(action)
-            next_state_tensor = torch.FloatTensor(next_state).to(device)
-            replay_buffer.push(state.cpu().numpy(), action, reward, next_state, done)
-            
-            if len(replay_buffer) >= BATCH_SIZE:
-                # 采样并训练
-                batch = replay_buffer.sample(BATCH_SIZE)
-                states, actions, rewards, next_states, dones = [t.to(device) for t in batch]
-                
-                # 计算目标Q值
+        for step in range(MAX_STEPS):
+            # epsilon-greedy策略
+            if random.random() < epsilon:
+                action = env.action_space.sample()
+            else:
                 with torch.no_grad():
-                    next_q = model(next_states, use_target=True)  # [batch_size, num_players]
-                    
-                    # 获取每个状态的最优动作的Q值
-                    next_q_max = []
-                    for i in range(BATCH_SIZE):
-                        ns = next_states[i].unsqueeze(0)
-                        next_action = select_action(model, ns, 0, env)  # 获取最优动作
-                        # 计算该动作的Q值
-                        action_q = next_q[i][next_action].mean()  # 使用选中球员的平均Q值
-                        next_q_max.append(action_q)
-                    
-                    next_q_max = torch.stack(next_q_max)
-                    targets = rewards + GAMMA * next_q_max * (1 - dones)
-                
-                # 计算当前Q值
-                current_q = []
-                q_values = model(states)  # [batch_size, num_players]
-                for i in range(BATCH_SIZE):
-                    action_indices = actions[i]
-                    current_q.append(q_values[i][action_indices].mean())  # 使用选中球员的平均Q值
-                current_q = torch.stack(current_q)
-                
-                # 计算损失并更新
-                loss = F.mse_loss(current_q, targets)
+                    state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
+                    q_values = policy_net(state_tensor)
+                    action = q_values.max(1)[1].item()
+            
+            # 执行动作
+            next_state, reward, done, _ = env.step(action)
+            episode_reward += reward
+            
+            # 存储经验
+            memory.push(state, action, reward, next_state, done)
+            state = next_state
+            
+            # 训练
+            if len(memory) > MIN_REPLAY_SIZE:
+                batch = memory.sample(BATCH_SIZE)
+                loss = compute_td_loss(batch, policy_net, target_net)
                 optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), MAX_GRAD_NORM)
                 optimizer.step()
-                
-                episode_loss += loss.item()
-            
-            total_reward += reward
-            state = next_state_tensor
             
             if done:
                 break
+            
+            total_steps += 1
+            # 更新目标网络
+            if total_steps % TARGET_UPDATE_FREQ == 0:
+                target_net.load_state_dict(policy_net.state_dict())
         
-        # 更新探索率
+        # 衰减epsilon
         epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
         
-        # 记录并保存
-        rewards_history.append(total_reward)
-        if (episode+1) % SAVE_INTERVAL == 0:
-            torch.save(model.state_dict(), os.path.join(MODEL_SAVE_PATH, f"dcio_{season}_ep{episode+1}.pth"))
-            # 在保存模型时打印详细信息
-            print_team_info(env, action, total_reward, epsilon, episode)
-        else:
-            print(f"Episode {episode+1} | Reward: {total_reward:.1f} | Epsilon: {epsilon:.3f}")
+        # 每N个episode评估一次
+        if episode % EVAL_FREQUENCY == 0:
+            eval_reward = evaluate(policy_net, test_season)
+            print(f"Episode {episode}, 训练奖励: {episode_reward:.2f}, 测试奖励: {eval_reward:.2f}, Epsilon: {epsilon:.2f}")
+            
+            # 保存最佳模型
+            if eval_reward > best_eval_reward:
+                best_eval_reward = eval_reward
+                torch.save(policy_net.state_dict(), os.path.join(MODEL_SAVE_PATH, 'best_model.pth'))
+    
+    print("训练完成!")
+    return policy_net
 
-    torch.save(model.state_dict(), os.path.join(MODEL_SAVE_PATH, f"dcio_{season}_final.pth"))
-    return rewards_history
+def evaluate(model, test_season, num_episodes=5):
+    """在测试赛季上评估模型"""
+    model.eval()
+    test_env = FPLEnv(season=test_season, verbose=False)
+    total_rewards = []
+    
+    with torch.no_grad():
+        for _ in range(num_episodes):
+            state = test_env.reset()
+            episode_reward = 0
+            done = False
+            
+            while not done:
+                state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
+                action = model(state_tensor).max(1)[1].item()
+                state, reward, done, _ = test_env.step(action)
+                episode_reward += reward
+            
+            total_rewards.append(episode_reward)
+    
+    model.train()
+    return np.mean(total_rewards)
 
 if __name__ == "__main__":
-    train()
+    # 设置随机种子
+    torch.manual_seed(42)
+    np.random.seed(42)
+    random.seed(42)
+    
+    # 添加一些训练参数
+    NUM_EPISODES = 1000
+    MAX_STEPS = 100
+    EVAL_FREQUENCY = 10
+    best_eval_reward = float('-inf')
+    
+    # 开始训练
+    trained_model = train()

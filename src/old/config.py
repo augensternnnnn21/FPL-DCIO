@@ -3,8 +3,8 @@ import os
 # 获取项目根目录的绝对路径
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 路径配置
-BASE_DATA_PATH = os.path.join(PROJECT_ROOT, "data")
+# 路径配置 - 修正数据目录路径
+BASE_DATA_PATH = os.path.join(PROJECT_ROOT, "..", "data")  # 回退一级到项目根目录
 PROCESSED_DATA_PATH = os.path.join(BASE_DATA_PATH, "processed")
 MODEL_SAVE_PATH = os.path.join(PROJECT_ROOT, "models")
 
