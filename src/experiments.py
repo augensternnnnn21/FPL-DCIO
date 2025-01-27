@@ -30,6 +30,8 @@ from utils.logger import FPLLogger
 from utils.visualization import VisualizationTool, ResultAnalyzer
 from utils.statistical_analysis import StatisticalAnalyzer
 from models.generalization import evaluate_generalization, GeneralizationEvaluator
+from utils.replay_buffer import ReplayBuffer
+from train import train_model
 
 class ExperimentRunner:
     """实验运行器"""
@@ -39,60 +41,47 @@ class ExperimentRunner:
         Args:
             config: 实验配置
         """
-        print("\nDEBUG: ExperimentRunner init...")
+        # 设置设备
+        self.device = config.device if hasattr(config, 'device') else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # 初始化logger
+        self.logger = FPLLogger(os.path.join(config.output_path, 'logs'))
         
         # 保存基础配置
         self.config = config
         self.base_data_path = Path(config.data_path)
-        print(f"Base data path: {self.base_data_path}")
         
         # 创建环境
-        print("\nDEBUG: Creating environment...")
-        
-        # 创建环境配置
-        env_config = ExperimentConfig(
-            data_path=str(self.base_data_path),  # 直接使用基础数据路径
-            output_path=config.output_path,
-            train_seasons=config.train_seasons,
-            val_season=config.val_season,
-            test_season=config.test_season,
-            budget=config.budget,
-            max_players=config.max_players,
-            num_episodes=config.num_episodes,
-            learning_rate=config.learning_rate,
-            gamma=config.gamma,
-            model=config.model
-        )
-        
-        print("\nDEBUG: 环境配置对象结构:")
-        print(f"类型: {type(env_config)}")
-        print(f"包含data_path字段: {'data_path' in env_config.__dict__}")
-        print(f"完整配置: {env_config.__dict__}")
-        
         try:
-            self.env = FPLEnv(env_config)
+            self.env = FPLEnv(config)
         except Exception as e:
-            print(f"Failed to create environment: {str(e)}")
+            self.logger.error(f"Failed to create environment: {str(e)}")
             raise
         
         # 获取初始状态以确定输入维度
         initial_state = self.env.reset()
-        input_dim = initial_state.shape[-1] if isinstance(initial_state, np.ndarray) else initial_state['player_features'].shape[-1]
-        print(f"\nDetermined input dimension: {input_dim}")
+        input_dim = initial_state['player_features'].shape[1]
+        self.logger.info(f"Input dimension: {input_dim}")
         
         # 创建模型
-        print("\nDEBUG: Creating model...")
+        self.logger.info("Creating model...")
         try:
-            self.model = self._create_model(input_dim, config.model)
+            self.model = self._create_model(
+                input_dim=input_dim,
+                model_config=self.config.model
+            )
+            self.target_model = self._create_model(
+                input_dim=input_dim,
+                model_config=self.config.model
+            )
+            self.target_model.load_state_dict(self.model.state_dict())
         except Exception as e:
-            print(f"Failed to create model: {str(e)}")
+            self.logger.error(f"Failed to create model: {str(e)}")
             raise
         
-        # 创建优化器
-        self.optimizer = optim.Adam(
-            self.model.parameters(),
-            lr=config.learning_rate
-        )
+        # 创建优化器和经验回放
+        self.optimizer = optim.Adam(self.model.parameters(), lr=config.learning_rate)
+        self.memory = ReplayBuffer(config.memory_size)
         
         # 记录最佳性能
         self.best_reward = float('-inf')
@@ -144,18 +133,26 @@ class ExperimentRunner:
     
     def _create_model(self, input_dim: int, model_config: ModelConfig):
         """创建模型"""
-        return DilatedTCN(
-            input_dim=input_dim,
-            hidden_dim=model_config.hidden_dim,
-            n_layers=model_config.num_layers,
-            dropout=model_config.dropout,
-            bidirectional=model_config.bidirectional,
-            use_attention=model_config.use_attention,
-            device=self.config.device,
-            budget=self.config.budget,
-            use_ilp=getattr(self.config, 'use_ilp', False),
-            use_synergy=getattr(self.config, 'use_synergy', False)
-        )
+        try:
+            self.logger.info(f"Creating model with input_dim={input_dim}")
+            model = DilatedTCN(
+                input_dim=input_dim,
+                hidden_dim=model_config.hidden_dim,
+                n_layers=model_config.num_layers,
+                dropout=model_config.dropout,
+                bidirectional=model_config.bidirectional,
+                use_attention=model_config.use_attention,
+                device=self.device,
+                budget=self.config.budget,
+                use_ilp=self.config.use_ilp,
+                use_synergy=self.config.use_synergy,
+                max_players=self.config.max_players
+            )
+            return model
+        
+        except Exception as e:
+            self.logger.error(f"Failed to create model: {str(e)}")
+            raise
     
     def _collect_features(self, seasons):
         """收集特定赛季的特征"""
@@ -225,32 +222,79 @@ class ExperimentRunner:
         torch.save(self.results, save_path)
         print(f"\nSaved results to {save_path}")
     
-    def run_experiments(self, num_runs=5):
-        """运行多次实验以获得统计显著性"""
-        print(f"\nStarting {num_runs} experimental runs...")
-        
-        all_results = []
-        for run in range(num_runs):
-            print(f"\nRun {run + 1}/{num_runs}")
-            try:
-                # 设置随机种子
-                seed = getattr(self.config, 'random_seed', 42) + run
-                torch.manual_seed(seed)
-                np.random.seed(seed)
-                
-                # 运行单次实验
-                result = self.run()
-                all_results.append(result)
-                
-            except Exception as e:
-                print(f"Error in run {run + 1}: {str(e)}")
-                continue
-        
-        # 分析多次运行的结果
-        if all_results:
-            self._analyze_multiple_runs(all_results)
-        
-        return all_results
+    def _create_env(self):
+        """创建环境"""
+        try:
+            # 验证数据路径
+            if not os.path.exists(self.config.data_path):
+                raise ValueError(f"Data path not found: {self.config.data_path}")
+            
+            # 创建环境配置
+            env_config = {
+                'config': self.config  # 传递整个配置对象
+            }
+            
+            # 创建环境
+            env = FPLEnv(**env_config)
+            
+            # 验证环境
+            self.logger.info("Validating environment...")
+            initial_state = env.reset()
+            
+            # 打印环境信息
+            self.logger.info(f"Action space: {env.action_space}")
+            self.logger.info(f"Observation space: {env.observation_space}")
+            
+            # 打印状态空间的形状
+            for key, value in initial_state.items():
+                if hasattr(value, 'shape'):
+                    self.logger.info(f"{key} shape: {value.shape}")
+            
+            return env
+            
+        except Exception as e:
+            self.logger.error(f"Error creating environment: {str(e)}")
+            raise
+
+    def run_experiments(self):
+        """运行实验"""
+        try:
+            # 创建环境
+            env = self._create_env()
+            
+            # 临时禁用ILP（因为CBC库兼容性问题）
+            self.config.use_ilp = False
+            
+            # 获取输入维度
+            initial_state = env.reset()
+            input_dim = initial_state['player_features'].shape[1]  # 使用player_features的特征维度
+            self.logger.info(f"Input dimension: {input_dim}")
+            
+            # 创建模型
+            model = self._create_model(
+                input_dim=input_dim,
+                model_config=self.config.model
+            )
+            
+            # 创建日志记录器
+            logger = FPLLogger(os.path.join(self.config.output_path, 'train_logs'))
+            
+            print("\nRunning baseline experiment...")
+            
+            # 训练模型
+            train_model(
+                env=env,
+                model=model,
+                config=self.config,
+                logger=logger
+            )
+            
+            # 保存结果
+            self._save_results()
+            
+        except Exception as e:
+            print(f"Error running experiments: {str(e)}")
+            raise
     
     def _save_config(self):
         """保存实验配置"""
@@ -307,121 +351,35 @@ class ExperimentRunner:
     
     def _train_model(self):
         """训练模型"""
-        print("\n[训练日志] 开始训练...")
-        print("\n训练指标说明:")
-        print("Last R: 最近一轮的奖励")
-        print("Avg R: 最近100轮的平均奖励")
-        print("Loss: 平均损失值")
-        print("Steps: 每轮的步数")
-        print("Violations: 约束违反次数")
-        print("-" * 80)
+        self.logger.info("\n" + "="*50)
+        self.logger.info("Starting Model Training")
+        self.logger.info("="*50 + "\n")
         
-        # 修改训练参数
-        self.config.num_episodes = 2000  # 增加训练轮数
-        self.config.learning_rate = 1e-4  # 降低学习率
-        
-        # 添加探索率衰减
-        initial_epsilon = 0.5
-        min_epsilon = 0.05
-        epsilon_decay = 0.995
-        
-        # 添加学习率调度器
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer,
-            mode='max',
-            factor=0.5,
-            patience=50,
-            verbose=True
-        )
-        
-        # 早停机制
-        best_reward = float('-inf')
-        patience = 100
-        no_improve_count = 0
-        
-        progress_bar = tqdm(range(self.config.num_episodes))
-        episode_rewards = []
-        episode_losses = []
-        
-        for episode in progress_bar:
-            epsilon = max(min_epsilon, initial_epsilon * (epsilon_decay ** episode))
-            
+        for episode in range(self.config.num_episodes):
             try:
                 # 随机选择一个训练赛季
-                self.current_season = np.random.choice(self.config.train_seasons)
+                season = np.random.choice(self.config.train_seasons)
                 
-                # 收集经验数据
-                episode_data = self._collect_episode_data(self.current_season)
+                # 收集数据
+                episode_data = self._collect_episode_data(season)
                 
-                if episode_data is None:
-                    continue
+                # 更新模型
+                loss_dict = self.model.update(episode_data)
+                self.latest_loss = loss_dict
                 
-                # 计算损失并更新模型
-                loss_dict = self.model.compute_loss(episode_data, self.current_season)
-                if loss_dict is None:
-                    continue
+                # 记录奖励
+                self.episode_rewards.append(episode_data['total_reward'])
                 
-                # 优化器步骤
-                self.optimizer.zero_grad()
-                loss_dict['total_loss'].backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-                self.optimizer.step()
-                
-                # 记录训练指标
-                total_reward = episode_data['total_reward']
-                episode_rewards.append(total_reward)
-                episode_losses.append(loss_dict['total_loss'].item())
-                
-                # 更新最佳奖励和早停计数
-                if total_reward > best_reward:
-                    best_reward = total_reward
-                    no_improve_count = 0
-                    self._save_checkpoint(episode, is_best=True)
-                else:
-                    no_improve_count += 1
-                
-                # 学习率调度
-                scheduler.step(total_reward)
-                
-                # 早停检查
-                if no_improve_count >= patience:
-                    print(f"\n早停：{patience} 轮没有改善")
-                    break
-                
-                # 更新进度条
-                avg_reward = np.mean(episode_rewards[-100:])
-                avg_loss = np.mean(episode_losses[-100:])
-                
-                progress_bar.set_description(
-                    f"Episode {episode:4d} | "
-                    f"Last R: {total_reward:6.2f} | "
-                    f"Avg R: {avg_reward:6.2f} | "
-                    f"Best R: {best_reward:6.2f} | "
-                    f"Loss: {avg_loss:6.2f} | "
-                    f"Steps: {len(episode_data['rewards']):3d} | "
-                    f"Violations: {episode_data.get('constraint_violations', 0):3d}"
-                )
-                
-                # 每10轮打印详细信息
-                if episode % 10 == 0:
-                    print(f"\nEpisode {episode} 详细信息:")
-                    print(f"  - 累计奖励: {total_reward:.2f}")
-                    print(f"  - 平均奖励: {total_reward/len(episode_data['rewards']):.2f}")
-                    print(f"  - 约束违反: {episode_data.get('constraint_violations', 0)}")
-                    if 'info' in episode_data:
-                        print(f"  - 球员价值: {episode_data['info'].get('value', 0):.2f}")
-                        print(f"  - 总得分: {episode_data['info'].get('points', 0):.2f}")
-                    print(f"  - 策略损失: {loss_dict['policy_loss']:.4f}")
-                    print(f"  - 价值损失: {loss_dict['value_loss']:.4f}")
-                    print(f"  - 正则化: {loss_dict['l2_reg']:.4f}")
-                    print("-" * 50)
-                
-                # 每100轮保存一次模型
-                if (episode + 1) % 100 == 0:
-                    self._save_checkpoint(episode + 1)
-                
+                # 每10轮评估一次
+                if (episode + 1) % 10 == 0:
+                    avg_reward = np.mean(self.episode_rewards[-10:])
+                    self.logger.info(f"\nEpisode {episode+1}/{self.config.num_episodes}")
+                    self.logger.info(f"Average Reward (last 10): {avg_reward:.2f}")
+                    self.logger.info(f"Latest Loss: {loss_dict}")
+                    self._evaluate_current_model(episode)
+                    
             except Exception as e:
-                print(f"\nError in episode {episode}: {str(e)}")
+                self.logger.error(f"Error in episode {episode}: {str(e)}")
                 continue
     
     def _evaluate_generalization(self):
@@ -465,7 +423,7 @@ class ExperimentRunner:
             float(is_covid),
             np.sin(year_rad),
             np.cos(year_rad)
-        ], device=self.config.device)
+        ], device=self.device)
     
     def _collect_episode_data(self, season):
         """收集一个回合的数据"""
@@ -480,40 +438,82 @@ class ExperimentRunner:
             state = self.env.reset(season)
             done = False
             total_reward = 0
+            steps = 0
+            violations = 0
             
-            # 从训练循环获取当前epsilon值
+            # 获取当前epsilon值
             current_episode = len(self.episode_rewards)
             epsilon = max(self.min_epsilon, 
                          self.initial_epsilon * (self.epsilon_decay ** current_episode))
             
             while not done:
-                # 获取动作（传递当前epsilon值）
-                action = self.model.select_action(state, epsilon=epsilon)
+                # 处理状态
+                if isinstance(state, dict):
+                    # 连接所有特征
+                    features = [
+                        state['player_features'],
+                        state['position_onehot'],
+                        state['team_onehot']
+                    ]
+                    
+                    # 确保所有特征都是2D的 [num_players, features]
+                    features = [f.squeeze() if len(f.shape) > 2 else f for f in features]
+                    
+                    # 连接特征
+                    state_tensor = np.concatenate(features, axis=1)
+                    state_tensor = torch.FloatTensor(state_tensor)
+                    
+                    # 添加batch维度 [1, num_players, total_features]
+                    state_tensor = state_tensor.unsqueeze(0)
+                else:
+                    state_tensor = torch.FloatTensor(state).unsqueeze(0)
                 
-                # 执行动作前打印调试信息
-                print(f"\nDebug - Before step:")
-                print(f"Action shape from model: {action.shape}")
-                print(f"State shape: {state['player_features'].shape}")
+                state_tensor = state_tensor.to(self.device)
+                
+                # 获取动作
+                with torch.no_grad():
+                    action = self.model.select_action(state_tensor, epsilon=epsilon)
                 
                 # 执行动作
-                next_state, reward, done, info = self.env.step(action)
+                next_state, reward, done, info = self.env.step(action.cpu().numpy())
                 total_reward += reward
+                steps += 1
+                violations += info.get('violations', 0)
                 
-                # 存储转换
-                if state is not None and next_state is not None:
-                    states.append(state)
-                    actions.append(action)
-                    rewards.append(reward)
-                    next_states.append(next_state)
-                    dones.append(done)
+                # 存储转换（保持原始numpy格式）
+                states.append(state_tensor.cpu().numpy())
+                actions.append(action.cpu().numpy())
+                rewards.append(reward)
+                next_states.append(next_state)
+                dones.append(done)
                 
-                # 更新状态
                 if not done:
                     state = next_state
             
+            # 记录训练信息（减少日志频率）
+            if current_episode % 10 == 0:  # 每10轮记录一次
+                metrics = {
+                    'reward': total_reward,
+                    'loss': self.latest_loss.get('total_loss', 0),
+                    'violations': violations,
+                    'team_value': info.get('total_cost', 0),
+                    'points': info.get('points', 0),
+                    'steps': steps,
+                    'epsilon': epsilon,
+                    'season': season
+                }
+                
+                if hasattr(self, 'latest_loss'):
+                    metrics.update({
+                        'policy_loss': self.latest_loss.get('policy_loss', 0),
+                        'value_loss': self.latest_loss.get('value_loss', 0)
+                    })
+                
+                self.logger.log_training(current_episode, metrics)
+            
             return {
-                'states': states,
-                'actions': actions,
+                'states': np.array(states),
+                'actions': np.array(actions),
                 'rewards': np.array(rewards),
                 'next_states': next_states,
                 'dones': np.array(dones),
@@ -522,7 +522,15 @@ class ExperimentRunner:
             }
         
         except Exception as e:
-            print(f"\nError in _collect_episode_data: {str(e)}")
+            self.logger.error(f"Error in _collect_episode_data: {str(e)}")
+            if isinstance(state, dict):
+                self.logger.error(f"State format: {type(state)}")
+                self.logger.error(f"State keys: {state.keys()}")
+                for k, v in state.items():
+                    if isinstance(v, (np.ndarray, torch.Tensor)):
+                        self.logger.error(f"{k} shape: {v.shape}")
+                        if isinstance(v, torch.Tensor):
+                            self.logger.error(f"{k} device: {v.device}")
             raise
     
     def _visualize_results(self):
@@ -626,7 +634,7 @@ class ExperimentRunner:
         try:
             # 1. 训练模型
             print("\n[1/3] Training model...")
-            self._train_model()
+            self.run_experiments()
             
             # 2. 评估泛化性能
             print("\n[2/3] Evaluating generalization...")

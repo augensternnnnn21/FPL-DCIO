@@ -18,12 +18,19 @@ class DilatedTCN(nn.Module):
                  device: str = None,
                  budget: float = 100.0,
                  use_ilp: bool = False,
-                 use_synergy: bool = False):  # 添加预算参数
+                 use_synergy: bool = False,
+                 max_players: int = 15):  # 添加 max_players 参数
         super().__init__()
+        
+        # 添加探索参数
+        self.epsilon = 1.0  # 初始探索率
+        self.epsilon_min = 0.01  # 最小探索率
+        self.epsilon_decay = 0.995  # 探索率衰减
         
         # 设置设备和预算
         self.device = device if device is not None else torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.budget = budget  # 添加预算属性
+        self.max_players = max_players  # 添加最大球员数量属性
         self.use_ilp = use_ilp
         self.use_synergy = use_synergy
         
@@ -94,6 +101,10 @@ class DilatedTCN(nn.Module):
         
         self.ilp_solver = NeuralILPSolver(budget=budget, max_per_team=3, total_players=15)
         
+    def update_epsilon(self):
+        """更新探索率"""
+        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+        
     def forward(self, x):
         """
         前向传播
@@ -102,6 +113,10 @@ class DilatedTCN(nn.Module):
                - [seq_len, feature_dim] 或 [feature_dim, seq_len]
                - [batch_size, seq_len, feature_dim]
         """
+        # 转换为 PyTorch tensor
+        if isinstance(x, np.ndarray):
+            x = torch.from_numpy(x).float()
+        
         # 打印输入形状以便调试
         print(f"Input shape: {x.shape}")
         
@@ -122,6 +137,9 @@ class DilatedTCN(nn.Module):
         else:
             if x.shape[-1] != self.input_dim:
                 x = x[..., :self.input_dim] if x.shape[-1] > self.input_dim else F.pad(x, (0, self.input_dim - x.shape[-1]))
+        
+        # 移动到正确的设备
+        x = x.to(self.device)
         
         # 再次打印形状以确认转换结果
         print(f"After reshape: {x.shape}")
@@ -154,49 +172,65 @@ class DilatedTCN(nn.Module):
         
         return x
 
-    def select_action(self, state, epsilon=0.2):
+    def select_action(self, state):
         """选择动作（添加探索机制）"""
-        if random.random() < epsilon:
-            return self._random_action(state)
-        else:
-            return self._model_based_action(state)
+        try:
+            if random.random() < self.epsilon:
+                # 如果是 PyTorch tensor，先转换为 numpy
+                position_onehot = state['position_onehot']
+                if isinstance(position_onehot, torch.Tensor):
+                    positions = position_onehot.cpu().numpy().argmax(axis=1)
+                else:
+                    # 已经是 numpy array
+                    positions = position_onehot.argmax(axis=1)
+                    
+                return self._random_action(state, positions)
+            else:
+                return self._model_based_action(state)
+            
+        except Exception as e:
+            print(f"Error in select_action: {str(e)}")
+            # 返回一个默认动作
+            return np.zeros(state['player_features'].shape[0], dtype=np.int32)
 
     def _model_based_action(self, state):
-        """模型预测选择"""
-        with torch.no_grad():
-            # 1. 基础特征提取
-            features = self.forward(state['player_features'])
+        """基于模型选择动作"""
+        try:
+            # 处理输入状态
+            features = state['player_features']
+            if isinstance(features, np.ndarray):
+                features = torch.FloatTensor(features)
             
-            # 2. 如果启用协同机制,使用GAT更新特征
-            if self.use_synergy:
-                # 获取协同矩阵
-                synergy_matrix = state['raw_features'].get('synergy_matrix', None)
-                if synergy_matrix is not None:
-                    # 准备输入
-                    features_for_gat = features.squeeze(0).unsqueeze(0)
-                    synergy_tensor = torch.from_numpy(synergy_matrix).float().to(self.device)
-                    adj_matrix = (synergy_tensor > 0).float()
-                    
-                    # 获取位置信息用于位置编码
-                    position_ids = state['position_onehot'].argmax(dim=1).unsqueeze(0)
-                    
-                    # GAT处理
-                    features = self.gat_fusion(
-                        features_for_gat, 
-                        adj_matrix.unsqueeze(0),
-                        position_ids
-                    )
+            # 确保形状正确 [batch_size, seq_len, features]
+            if len(features.shape) == 2:
+                features = features.unsqueeze(0)
             
-            # 3. 计算选择概率
-            action_probs = torch.sigmoid(self.action_head(features)).squeeze(0)
+            print(f"Input shape: {features.shape}")
+            print(f"After reshape: {features.shape}")
             
-            # 4. 根据设置选择决策方法
-            if self.use_ilp:
-                selected = self._select_by_ilp(action_probs, state)
-            else:
-                selected = self._select_by_position_and_budget(action_probs, state)
+            # 获取动作概率
+            with torch.no_grad():
+                features = features.to(self.device)
+                action_probs = torch.sigmoid(self.action_head(self.forward(features)))
+                action_probs = action_probs.squeeze().cpu().numpy()
             
-            return selected.cpu().numpy()
+            # 使用阈值选择动作
+            action = (action_probs > 0.5).astype(np.int32)
+            
+            # 确保选择了足够的球员
+            if np.sum(action) < self.max_players:
+                # 如果选择的球员不够，选择概率最高的未选择球员
+                remaining = self.max_players - np.sum(action)
+                unselected = np.where(action == 0)[0]
+                top_remaining = unselected[np.argsort(action_probs[unselected])[-int(remaining):]]
+                action[top_remaining] = 1
+            
+            return action
+            
+        except Exception as e:
+            print(f"Error in _model_based_action: {str(e)}")
+            # 返回一个默认动作
+            return np.zeros(len(state['player_features']), dtype=np.int32)
 
     def _select_by_position_and_budget(self, action_probs, state):
         """
@@ -212,43 +246,61 @@ class DilatedTCN(nn.Module):
 
         return selected_array
 
-    def _select_by_ilp(self, action_probs, state):
-        values = state['raw_features']['values']
-        teams = state['raw_features'].get('names', np.array([]))
+    def _select_by_ilp(self, action_probs, values, teams):
         return self.ilp_solver.solve(action_probs, values, teams)
 
-    def _random_action(self, state):
+    def _random_action(self, state, positions=None):
         """随机选择符合预算的球员"""
-        values = state['raw_features']['values']
-        positions = state['position_onehot'].argmax(dim=1)
-        
-        # 按位置分组
-        position_groups = {
-            0: [],  # GK
-            1: [],  # DEF
-            2: [],  # MID
-            3: []   # FWD
-        }
-        
-        for i in range(len(positions)):
-            position_groups[positions[i].item()].append(i)
-        
-        # 随机选择符合位置要求的球员
-        selected = np.zeros(len(values))
-        for pos, indices in position_groups.items():
-            k = 2 if pos == 0 else 5 if pos in [1,2] else 3
-            if len(indices) >= k:
-                chosen = np.random.choice(indices, k, replace=False)
-                selected[chosen] = 1
-        
-        # 确保总价值不超过预算
-        total_cost = (selected * values.cpu().numpy()).sum()
-        while total_cost > self.budget and np.sum(selected) > 0:
-            # 移除最贵的球员
-            selected[np.argmax(selected * values.cpu().numpy())] = 0
-            total_cost = (selected * values.cpu().numpy()).sum()
-        
-        return selected
+        try:
+            # 获取价格信息
+            if isinstance(state['raw_features'], dict):
+                values = state['raw_features']['values']
+            else:
+                # 如果raw_features是numpy数组，使用第一列作为价格
+                values = state['raw_features'][:, 0]
+            
+            # 获取位置信息
+            if positions is None:
+                position_onehot = state['position_onehot']
+                if isinstance(position_onehot, torch.Tensor):
+                    positions = position_onehot.cpu().numpy().argmax(axis=1)
+                else:
+                    positions = position_onehot.argmax(axis=1)
+            
+            # 按位置分组
+            position_groups = {
+                0: [],  # GK
+                1: [],  # DEF
+                2: [],  # MID
+                3: []   # FWD
+            }
+            
+            for i in range(len(positions)):
+                position_groups[positions[i]].append(i)
+            
+            # 随机选择符合位置要求的球员
+            selected = np.zeros(len(values))
+            for pos, indices in position_groups.items():
+                k = 2 if pos == 0 else 5 if pos in [1,2] else 3
+                if len(indices) >= k:
+                    chosen = np.random.choice(indices, k, replace=False)
+                    selected[chosen] = 1
+            
+            # 确保总价值不超过预算
+            if isinstance(values, torch.Tensor):
+                values = values.cpu().numpy()
+            total_cost = (selected * values).sum()
+            while total_cost > self.budget and np.sum(selected) > 0:
+                # 移除最贵的球员
+                selected[np.argmax(selected * values)] = 0
+                total_cost = (selected * values).sum()
+            
+            return selected
+            
+        except Exception as e:
+            print(f"Error in _random_action: {str(e)}")
+            # 返回一个默认动作
+            return np.zeros(state['player_features'].shape[0], dtype=np.int32)
 
     def _count_positions(self, action, state):
         """统计每个位置选择的球员数量"""

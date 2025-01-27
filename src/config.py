@@ -52,42 +52,83 @@ class GeneralizationConfig:
 @dataclass
 class ExperimentConfig:
     """实验配置"""
+    # 数据路径
     data_path: str
     output_path: str
+    
+    # 环境参数
     budget: float = 100.0
     max_players: int = 15
+    
+    # 训练参数
     num_episodes: int = 1000
     learning_rate: float = 0.001
     gamma: float = 0.99
+    batch_size: int = 32          # 批次大小
+    memory_size: int = 100000     # 记忆缓冲区大小
+    min_memory_size: int = 1000  # 添加最小记忆大小
+    target_update: int = 10       # 目标网络更新频率
+    
+    # 探索参数
+    initial_epsilon: float = 1.0    # 初始探索率 (原 epsilon_start)
+    epsilon_end: float = 0.01     # 最终探索率
+    epsilon_decay: float = 0.995  # 探索率衰减
+    min_epsilon: float = 0.01     # 最小探索率
+    
+    # 训练数据配置
     train_seasons: List[str] = None
     val_season: str = None
     test_season: str = None
-    model: ModelConfig = None
+    
+    # 模型配置
+    model: ModelConfig = ModelConfig()
+    
+    # 特性开关
     use_ilp: bool = True
     use_synergy: bool = True
     use_triple_captain: bool = False
     use_bench_boost: bool = False
+    
+    # 设备配置
     device: torch.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    
     def __post_init__(self):
         """初始化后的处理"""
-        # 确保路径格式正确
-        self.data_path = str(self.data_path)
-        self.output_path = str(self.output_path)
-        
-        # 验证配置
-        self._validate_config()
-    
-    def _validate_config(self):
-        """验证配置参数"""
-        if self.budget <= 0:
-            raise ValueError(f"预算必须为正数: {self.budget}")
-        if self.max_players <= 0:
-            raise ValueError(f"最大球员数必须为正数: {self.max_players}")
-        if self.num_episodes <= 0:
-            raise ValueError(f"训练回合数必须为正数: {self.num_episodes}")
-        if not (0 <= self.gamma <= 1):
-            raise ValueError(f"折扣因子必须在[0,1]范围内: {self.gamma}")
+        if self.train_seasons is None:
+            self.train_seasons = ['2019-20', '2020-21']
+        if self.val_season is None:
+            self.val_season = '2021-22'
+        if self.test_season is None:
+            self.test_season = '2022-23'
+
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'data_path': self.data_path,
+            'output_path': self.output_path,
+            'budget': self.budget,
+            'max_players': self.max_players,
+            'num_episodes': self.num_episodes,
+            'learning_rate': self.learning_rate,
+            'gamma': self.gamma,
+            'batch_size': self.batch_size,
+            'memory_size': self.memory_size,
+            'min_memory_size': self.min_memory_size,
+            'target_update': self.target_update,
+            'initial_epsilon': self.initial_epsilon,  # 更新名称
+            'epsilon_end': self.epsilon_end,
+            'epsilon_decay': self.epsilon_decay,
+            'min_epsilon': self.min_epsilon,
+            'train_seasons': self.train_seasons,
+            'val_season': self.val_season,
+            'test_season': self.test_season,
+            'model': self.model.__dict__,
+            'use_ilp': self.use_ilp,
+            'use_synergy': self.use_synergy,
+            'use_triple_captain': self.use_triple_captain,
+            'use_bench_boost': self.use_bench_boost,
+            'device': self.device
+        }
 
 def get_default_config() -> ExperimentConfig:
     """获取默认配置"""
@@ -158,3 +199,11 @@ ENV_CONFIG = {
         'FWD': 3
     }
 }
+
+@dataclass
+class LoggingConfig:
+    log_interval: int = 10  # 每多少轮记录一次训练信息
+    eval_interval: int = 100  # 每多少轮评估一次
+    save_interval: int = 1000  # 每多少轮保存一次模型
+    plot_interval: int = 100  # 每多少轮绘制一次图表
+    verbose: bool = True  # 是否输出详细信息

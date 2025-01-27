@@ -14,73 +14,151 @@ class FPLPreprocessor:
             'FWD': 'FWD',
             'FOR': 'FWD'
         }
+        self.required_columns = [
+            'player_name',     # 球员名
+            'pos',            # 位置
+            'team',           # 球队
+            'price',          # 价值
+            'points',         # 总得分
+            'minutes',        # 出场时间
+            'goals_scored',   # 进球
+            'assists',        # 助攻
+            'clean_sheets',   # 零封
+            'goals_conceded', # 丢球
+            'season',         # 赛季
+            'GW'             # 比赛周
+        ]
     
-    def preprocess(self, data: pd.DataFrame, team_list: pd.DataFrame) -> pd.DataFrame:
-        """预处理FPL数据"""
-        print("\n当前数据列：", data.columns.tolist())
-        
-        # 检查并打印team相关列
-        team_columns = [col for col in data.columns if 'team' in col.lower()]
-        print("候选球队列：", team_columns)
-        
-        # 使用team_x作为主要的球队列
-        if 'team_x' in data.columns:
-            data['team'] = data['team_x']
-            print("最终使用球队列: team_x")
-        
-        # 标准化数据类型
-        data = self._standardize_types(data)
-        
-        # 确保必需的列存在
-        required_columns = ['name', 'position', 'team', 'value', 'total_points', 
-                          'minutes', 'goals_scored', 'assists', 'clean_sheets', 
-                          'goals_conceded']
-        
-        missing_cols = [col for col in required_columns if col not in data.columns]
-        if missing_cols:
-            raise ValueError(f"缺少必需的列: {missing_cols}")
-            
-        # 处理比赛周列
-        if 'GW' in data.columns:
-            data['gw'] = data['GW']
-        elif 'round' in data.columns:
-            data['gw'] = data['round']
-        else:
-            raise ValueError("找不到比赛周数据列 (GW/round)")
-            
-        print(f"✅ 成功处理比赛周数据，范围: {data['gw'].min()}-{data['gw'].max()}")
-            
-        # 打印球队数据列
-        print("\n球队数据列：")
-        print(team_list.columns.tolist())
-        
-        # 重命名球队列表中的列
-        team_list_columns = {
-            'standard_name': 'standard_name',  # 保持不变
-            'short_name': 'short_name',        # 保持不变
-            'team_x': 'raw_name'              # 将team_x映射为raw_name
-        }
-        team_list = team_list.rename(columns=team_list_columns)
-        
-        # 处理球队名称映射
+    def preprocess(self, data, team_data=None):
+        """预处理数据
+        Args:
+            data (pd.DataFrame): 原始数据
+            team_data (pd.DataFrame, optional): 球队数据
+        Returns:
+            pd.DataFrame: 预处理后的数据
+        """
         try:
-            # 使用team列作为映射键
-            team_mapping = dict(zip(team_list['raw_name'], team_list['standard_name']))
-            data['team'] = data['team'].map(team_mapping).fillna(data['team'])
-            print(f"✅ 成功映射 {len(team_mapping)} 支球队名称")
+            # 检查数据列名
+            print(f"Available columns: {data.columns.tolist()}")
+            
+            # 检查必要的列
+            missing_cols = [col for col in self.required_columns if col not in data.columns]
+            if missing_cols:
+                # 尝试映射列名
+                column_mapping = {
+                    'element': 'player_name',
+                    'element_type': 'pos',
+                    'round': 'GW',
+                    'web_name': 'player_name',
+                    'name': 'player_name',
+                    'value': 'price',
+                    'total_points': 'points'
+                }
+                
+                # 重命名列
+                data = data.rename(columns=column_mapping)
+                
+                # 再次检查必要的列
+                missing_cols = [col for col in self.required_columns if col not in data.columns]
+                if missing_cols:
+                    raise ValueError(f"Missing required columns: {missing_cols}")
+            
+            # 复制数据以避免修改原始数据
+            df = data.copy()
+            
+            # 标准化列名
+            df = df.rename(columns={
+                'GW': 'gw',
+                'points': 'points',
+                'price': 'price',
+                'player_name': 'name',
+                'pos': 'position'
+            })
+            
+            # 标准化位置名称
+            if 'position' in df.columns:
+                df['position'] = df['position'].map(self.position_mapping).fillna(df['position'])
+            
+            # 处理缺失值
+            df = self._handle_missing_values(df)
+            
+            # 标准化数值
+            df = self._normalize_values(df)
+            
+            # 添加球队信息（如果提供）
+            if team_data is not None:
+                df = self._add_team_info(df, team_data)
+            
+            # 添加特征
+            df = self._add_features(df)
+            
+            return df
+            
         except Exception as e:
-            print(f"⚠️ 球队名称映射警告: {str(e)}")
-            print("继续使用原始球队名称")
+            print(f"❌ 数据预处理错误: {str(e)}")
+            # 打印更多调试信息
+            print(f"数据形状: {data.shape}")
+            print(f"可用列: {data.columns.tolist()}")
+            raise
+    
+    def _handle_missing_values(self, df):
+        """处理缺失值"""
+        # 数值型列用0填充
+        numeric_cols = [
+            'minutes', 'goals_scored', 'assists', 
+            'clean_sheets', 'goals_conceded', 'points', 'price'
+        ]
+        df[numeric_cols] = df[numeric_cols].fillna(0)
         
-        # 选择最终的列
-        final_columns = ['name', 'position', 'team', 'value', 'total_points', 
-                        'minutes', 'goals_scored', 'assists', 'clean_sheets', 
-                        'goals_conceded', 'gw']  # 使用小写的gw
+        # 分类列用众数填充
+        categorical_cols = ['position', 'team']
+        for col in categorical_cols:
+            df[col] = df[col].fillna(df[col].mode()[0])
         
-        data = data[final_columns].copy()
+        return df
+    
+    def _normalize_values(self, df):
+        """标准化数值"""
+        # 价格转换为百万单位
+        if 'price' in df.columns:
+            df['price'] = df['price'] / 10
         
-        print(f"\n✅ 数据预处理完成，最终数据形状: {data.shape}")
-        return data
+        # 确保所有数值列为float类型
+        numeric_cols = [
+            'minutes', 'goals_scored', 'assists', 
+            'clean_sheets', 'goals_conceded', 'points', 'price'
+        ]
+        df[numeric_cols] = df[numeric_cols].astype(float)
+        
+        return df
+    
+    def _add_team_info(self, df, team_data):
+        """添加球队信息"""
+        # 合并球队数据
+        if 'team_id' in team_data.columns:
+            df = df.merge(
+                team_data[['team_id', 'name']],
+                left_on='team',
+                right_on='name',
+                how='left'
+            )
+        return df
+    
+    def _add_features(self, df):
+        """添加新特征"""
+        # 计算每分钟得分
+        df['points_per_minute'] = df.apply(
+            lambda x: x['points'] / x['minutes'] if x['minutes'] > 0 else 0,
+            axis=1
+        )
+        
+        # 计算投资回报率
+        df['roi'] = df['points'] / df['price']
+        
+        # 计算参与进球数
+        df['goal_involvements'] = df['goals_scored'] + df['assists']
+        
+        return df
     
     def _standardize_types(self, data: pd.DataFrame) -> pd.DataFrame:
         """标准化数据类型"""

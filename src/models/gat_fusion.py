@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 class GATFusion(nn.Module):
     """图注意力融合模块,用于建模球员间的协同关系"""
@@ -52,13 +53,12 @@ class GATFusion(nn.Module):
             h = h + self.pos_encoder(position_ids)
             
         # 3. 多头注意力处理
-        gat_outputs = []
-        for gat in self.gat_layers:
-            head_out = gat(h, adj_matrix)  # [batch_size, num_players, hidden_dim//num_heads]
-            gat_outputs.append(head_out)
-            
-        # 4. 拼接多头输出
-        h = torch.cat(gat_outputs, dim=-1)  # [batch_size, num_players, hidden_dim]
+        gat_outputs = torch.stack([
+            gat(h, adj_matrix) for gat in self.gat_layers
+        ], dim=-1)  # [batch_size, num_players, hidden_dim//num_heads, num_heads]
+        
+        # 重塑并拼接
+        h = gat_outputs.reshape(batch_size, num_players, -1)  # [batch_size, num_players, hidden_dim]
         
         # 5. 输出投影
         out = self.output_proj(h)
