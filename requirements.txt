@@ -1,0 +1,52 @@
+# Core Dependencies
+numpy>=1.19.2
+pandas>=1.2.0
+scipy>=1.7.0
+
+# API and Async
+fastapi>=0.68.0
+uvicorn>=0.15.0
+aiohttp>=3.8.0
+requests>=2.25.1
+
+# Data Processing
+scikit-learn>=0.24.2
+textblob>=0.15.3  # 用于文本情感分析
+
+# Visualization
+streamlit>=1.0.0
+plotly>=5.3.0
+matplotlib>=3.4.3
+
+# Testing
+pytest>=6.2.5
+pytest-asyncio>=0.16.0
+pytest-cov>=2.12.0
+
+# Utilities
+python-dotenv>=0.19.0  # 用于环境变量管理
+pydantic>=1.8.2      # 数据验证
+networkx>=2.6.3      # 用于博弈拓扑网络
+beautifulsoup4>=4.9.3  # 用于网页解析
+tweepy>=4.4.0        # Twitter API
+
+# Optional but Recommended
+jupyter>=1.0.0       # 用于开发和分析
+black>=21.9b0        # 代码格式化
+isort>=5.9.3         # import 排序
+mypy>=0.910         # 类型检查
+flake8>=3.9.2       # 代码质量检查
+
+# Version Control
+pre-commit>=2.15.0   # Git hooks
+
+# Documentation
+sphinx>=4.2.0        # 文档生成
+mkdocs>=1.2.3        # 文档站点
+mkdocstrings>=0.15.2  # Python文档自动生成
+
+# New dependencies
+torch>=1.9.0
+python-dateutil>=2.8.2
+feedparser>=6.0.0
+newsapi-python>=0.2.6 

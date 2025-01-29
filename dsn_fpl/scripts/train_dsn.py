@@ -1,0 +1,58 @@
+# dsn_fpl/scripts/train_dsn.py
+
+import asyncio
+import torch
+from pathlib import Path
+from dsn_fpl.src.models.dsn_model import DSNModel, DSNTrainer
+from dsn_fpl.src.core.data.dataset_generator import DSNDatasetGenerator
+from dsn_fpl.src.core.data.manager import DataManager
+
+async def main():
+    # 设置随机种子
+    torch.manual_seed(42)
+    
+    # 初始化数据生成器
+    # 获取项目根目录
+    project_root = Path(__file__).parent.parent.parent
+    data_path = project_root / "data"
+    print(f"Loading data from: {data_path}")
+    
+    dataset_generator = DSNDatasetGenerator(data_path)
+    
+    # 加载历史数据
+    historical_data = dataset_generator.load_historical_data()
+    
+    # 初始化数据管理器
+    data_manager = DataManager(historical_data)
+    
+    # 初始化模型和训练器
+    model = DSNModel(data_manager=data_manager)
+    trainer = DSNTrainer(model)
+    
+    # 训练循环
+    num_epochs = 50
+    for epoch in range(num_epochs):
+        print(f"\nEpoch {epoch + 1}/{num_epochs}")
+        
+        # 生成训练批次
+        batch = await dataset_generator.generate_training_batch(
+            historical_data,
+            batch_size=32
+        )
+        
+        # 训练步骤
+        loss = await trainer.train_step(batch)
+        print(f"Loss: {loss:.4f}")
+        
+        # 每5个epoch评估一次
+        if (epoch + 1) % 5 == 0:
+            optimal_strategy = model.find_optimal_strategy()
+            if optimal_strategy:
+                print("\n最优策略:")
+                print(f"球员: {optimal_strategy.player_ids}")
+                print(f"阵型: {optimal_strategy.formation}")
+                print(f"队长: {optimal_strategy.captain_id}")
+                print(f"预期得分: {optimal_strategy.expected_points:.2f}")
+
+if __name__ == "__main__":
+    asyncio.run(main())

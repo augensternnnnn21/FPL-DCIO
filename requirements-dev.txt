@@ -1,0 +1,21 @@
+-r requirements.txt
+
+# Development Tools
+ipython>=7.28.0
+ipdb>=0.13.9        # 调试工具
+line-profiler>=3.3.0  # 性能分析
+memory-profiler>=0.58.0  # 内存分析
+
+# Testing Extras
+pytest-mock>=3.6.1
+pytest-benchmark>=3.4.1
+hypothesis>=6.24.0   # 属性测试
+
+# Code Quality
+pylint>=2.11.1
+bandit>=1.7.0       # 安全检查
+safety>=1.10.3      # 依赖安全检查
+
+# Documentation Extras
+sphinx-autodoc-typehints>=1.12.0
+sphinx-rtd-theme>=1.0.0 

@@ -1,0 +1,39 @@
+# 训练配置
+training:
+  num_episodes: 2000
+  learning_rate: 0.001
+  gamma: 0.99
+  epsilon_start: 0.5
+  epsilon_end: 0.05
+  epsilon_decay: 0.995
+  batch_size: 32
+  buffer_size: 10000
+
+# 模型配置
+model:
+  hidden_dim: 128
+  num_layers: 3
+  dropout: 0.1
+  use_attention: true
+  bidirectional: true
+  num_heads: 4
+
+# FPL规则配置
+fpl:
+  budget: 100.0
+  total_players: 15
+  max_per_team: 3
+  position_requirements:
+    GK: 2
+    DEF: 5
+    MID: 5
+    FWD: 3
+
+# 实验配置
+experiment:
+  train_seasons: ["2016-17", "2017-18", "2018-19"]
+  val_season: "2019-20"
+  test_season: "2020-21"
+  output_dir: "experiments"
+  checkpoint_freq: 100
+  eval_freq: 50 

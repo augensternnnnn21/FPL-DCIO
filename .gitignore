@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+experiments/
+logs/
+checkpoints/
+*.pth
+*.pkl
+*.log
+
+# Data
+data/*.csv
+data/*.json
+data/*.pkl
+
+# OS
+.DS_Store
+.env
+
+# Ignore data files
+data/*/
+!data/*/*_processed.csv  # 允许各赛季目录下的处理文件
+!data/README.md
+
+# Logs
+*.log
+
+# Processed data
+!data/processed/*.csv
