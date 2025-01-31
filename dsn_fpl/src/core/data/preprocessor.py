@@ -10,29 +10,172 @@ class DataPreprocessor:
     def __init__(self):
         self.form_window = 5  # 状态计算窗口
         self.price_window = 3  # 价格趋势窗口
-        
-    def process_player_data(self, raw_data: RawPlayerData) -> Dict[str, np.ndarray]:
-        """处理原始球员数据"""
-        # 计算状态轨迹
-        form_trajectory = self._compute_form_trajectory(
-            raw_data.points,
-            raw_data.minutes
-        )
-        
-        # 计算疲劳指数
-        fatigue = self._compute_fatigue_index(raw_data.minutes)
-        
-        # 计算价格趋势
-        price_trend = self._compute_price_momentum(
-            [raw_data.price],  # 这里需要历史价格数据
-            self.price_window
-        )
-        
-        return {
-            'form_trajectory': form_trajectory,
-            'fatigue_index': fatigue,
-            'price_trend': price_trend
+        self.feature_means = {}
+        self.feature_stds = {}
+        self.position_weights = {
+            'GK': 1.8,   # 进一步提高门将权重
+            'DEF': 1.5,  # 进一步提高后卫权重
+            'MID': 1.3,  # 提高中场权重
+            'FWD': 1.2   # 略微提高前锋权重
         }
+        self.feature_importance = {
+            'total_points': 1.0,
+            'form': 0.9,
+            'points_per_game': 0.8,
+            'minutes': 0.7,
+            'selected_by_percent': 0.6
+        }
+        
+    def standardize_features(self, data: Dict[str, float]) -> Dict[str, float]:
+        """使用改进的特征标准化方法
+        
+        Args:
+            data: 原始特征数据
+            
+        Returns:
+            Dict[str, float]: 标准化后的特征数据
+        """
+        standardized = {}
+        numerical_features = []
+        
+        # 第一步：数据清洗和异常值处理
+        for key, value in data.items():
+            if key in ['id', 'name', 'team', 'position']:
+                standardized[key] = value
+                continue
+                
+            try:
+                value = float(value)
+                # 处理异常值
+                if key in ['minutes', 'total_points', 'form', 'points_per_game']:
+                    value = np.clip(value, 0, np.inf)  # 不允许负值
+                if key == 'selected_by_percent':
+                    value = np.clip(value, 0, 100)  # 百分比限制
+                numerical_features.append((key, value))
+            except (ValueError, TypeError):
+                standardized[key] = value
+                continue
+        
+        # 第二步：分层标准化
+        for key, value in numerical_features:
+            if key not in self.feature_means:
+                self.feature_means[key] = value
+                self.feature_stds[key] = 1.0
+            
+            # 使用Winsorization进行异常值处理
+            p1, p99 = np.percentile([value], [1, 99])
+            value = np.clip(value, p1, p99)
+            
+            # 使用改进的标准化方法
+            if key in ['total_points', 'form', 'points_per_game']:
+                # 对关键指标使用Min-Max标准化
+                min_val = 0
+                max_val = max(100, self.feature_means[key] * 1.5)  # 更保守的最大值估计
+                std_value = (value - min_val) / (max_val - min_val + 1e-8)
+                # 使用更保守的压缩方法
+                std_value = np.clip(std_value, 0, 1)
+            else:
+                # 其他指标使用Robust标准化
+                median = self.feature_means[key]
+                iqr = self.feature_stds[key]
+                if iqr == 0:
+                    iqr = 1.0
+                std_value = (value - median) / (iqr + 1e-8)
+                # 使用更温和的压缩
+                std_value = 0.5 * (1 + np.tanh(std_value / 2))
+            
+            # 应用特征重要性权重，但使用更小的权重
+            if key in self.feature_importance:
+                std_value *= (0.5 + 0.5 * self.feature_importance[key])
+            
+            # 确保最终值在合理范围内
+            standardized[key] = float(np.clip(std_value, 0, 1))
+            
+        return standardized
+        
+    def process_player_data(self, player_data: RawPlayerData) -> Dict:
+        """处理球员数据，添加更多特征组合
+        
+        Args:
+            player_data: 原始球员数据
+            
+        Returns:
+            Dict: 处理后的球员数据
+        """
+        # 基础特征提取
+        processed = {
+            'id': player_data.player_id,
+            'name': player_data.name,
+            'team': player_data.team,
+            'position': player_data.position,
+            'minutes': float(player_data.minutes or 0),
+            'form': float(player_data.form or 0),
+            'points_per_game': float(player_data.points_per_game or 0),
+            'selected_by_percent': float(player_data.selected_by_percent or 0),
+            'total_points': float(player_data.total_points or 0)
+        }
+        
+        # 高级特征工程
+        minutes = float(player_data.minutes or 0)
+        form = float(player_data.form or 0)
+        points_per_game = float(player_data.points_per_game or 0)
+        total_points = float(player_data.total_points or 0)
+        selected_by = float(player_data.selected_by_percent or 0)
+        
+        # 1. 效率指标
+        processed['points_per_90'] = (points_per_game * 90) / (minutes + 1e-8)
+        processed['points_per_selection'] = total_points / (selected_by + 1e-8)
+        
+        # 2. 稳定性指标
+        processed['performance_stability'] = 1 - np.abs(form - points_per_game) / (points_per_game + 1e-8)
+        processed['consistency_score'] = np.exp(-np.abs(form - points_per_game))
+        
+        # 3. 趋势指标
+        processed['form_momentum'] = form * np.log1p(minutes / 90)
+        processed['popularity_momentum'] = form * np.log1p(selected_by)
+        
+        # 4. 综合评分
+        processed['overall_rating'] = (
+            processed['points_per_90'] * 0.3 +
+            processed['performance_stability'] * 0.2 +
+            processed['form_momentum'] * 0.3 +
+            processed['popularity_momentum'] * 0.2
+        )
+        
+        # 5. 位置特定特征
+        if processed['position'] == 'GK':
+            processed['save_potential'] = points_per_game * 1.5
+            processed['clean_sheet_value'] = total_points / (minutes/90 + 1e-8) * 1.3
+        elif processed['position'] == 'DEF':
+            processed['clean_sheet_potential'] = points_per_game * 1.3
+            processed['attacking_threat'] = form * 1.2
+        elif processed['position'] == 'MID':
+            processed['involvement_potential'] = points_per_game * 1.2
+            processed['creativity_score'] = form * 1.4
+        elif processed['position'] == 'FWD':
+            processed['goal_potential'] = points_per_game * 1.4
+            processed['scoring_efficiency'] = total_points / (minutes + 1e-8) * 90
+        
+        # 标准化特征
+        processed = self.standardize_features(processed)
+        
+        # 位置权重调整
+        position_weight = self.position_weights.get(player_data.position, 1.0)
+        
+        # 动态权重调整
+        if minutes > 60:  # 主力球员
+            position_weight *= 1.2
+        if form > points_per_game:  # 状态上升期
+            position_weight *= 1.15
+        if selected_by > 20:  # 热门球员
+            position_weight *= 1.1
+            
+        # 应用权重
+        for key in processed:
+            if isinstance(processed[key], (int, float)) and key not in ['id']:
+                processed[key] *= position_weight
+        
+        return processed
         
     def _compute_form_trajectory(self, 
                                points: Union[List[int], int], 
@@ -121,29 +264,45 @@ class DataPreprocessor:
         
         return padded_changes[-window:]
         
-    def create_temporal_state(self,
-                            players_data: Dict[int, Dict],
-                            fixture_difficulty: Dict[int, List[Dict]],
-                            timestamp: datetime) -> TemporalState:
-        """创建时间维度状态"""
+    def create_temporal_state(self, processed_data: Dict, fixture_difficulty: Dict, current_time: datetime) -> TemporalState:
+        """创建时间维度状态
+        
+        Args:
+            processed_data: 处理后的数据
+            fixture_difficulty: 赛程难度
+            current_time: 当前时间
+            
+        Returns:
+            TemporalState: 时间维度状态
+        """
+        # 计算疲劳指数
+        fatigue_indices = {}
+        for pid, data in processed_data.items():
+            minutes = float(data.get('minutes', 0))
+            fatigue = 1.0 - np.exp(-minutes / 9000)  # 使用指数衰减
+            fatigue_indices[pid] = max(0.0, min(1.0, fatigue))  # 限制在[0,1]范围内
+            
+        # 计算状态轨迹
+        form_trajectories = {}
+        for pid, data in processed_data.items():
+            form = float(data.get('form', 0))
+            points_per_game = float(data.get('points_per_game', 0))
+            trajectory = np.array([form, points_per_game])
+            form_trajectories[pid] = trajectory
+            
+        # 计算价格趋势
+        price_trends = {}
+        for pid, data in processed_data.items():
+            selected_by = float(data.get('selected_by_percent', 0))
+            price_trend = np.tanh(selected_by / 100)  # 使用双曲正切函数归一化
+            price_trends[pid] = price_trend
+            
         return TemporalState(
-            timestamp=timestamp,
-            fixture_difficulty={
-                pid: self._process_fixture_difficulty(fixtures)
-                for pid, fixtures in fixture_difficulty.items()
-            },
-            fatigue_index={
-                pid: data['fatigue_index']
-                for pid, data in players_data.items()
-            },
-            form_trajectory={
-                pid: data['form_trajectory']
-                for pid, data in players_data.items()
-            },
-            price_trend={
-                pid: data['price_trend']
-                for pid, data in players_data.items()
-            }
+            timestamp=current_time,
+            fixture_difficulty=fixture_difficulty,
+            fatigue_index=fatigue_indices,
+            form_trajectory=form_trajectories,
+            price_trend=price_trends
         )
         
     def _process_fixture_difficulty(self, fixtures: Union[List[Dict], float, List[float], int]) -> float:

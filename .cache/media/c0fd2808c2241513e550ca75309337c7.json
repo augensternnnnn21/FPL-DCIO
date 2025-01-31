@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-01-29T21:04:05.196848",
+  "data": [
+    {
+      "title": "Manchester City 3-1 Chelsea, Player Ratings: Sánchez goes for the individual record low",
+      "description": "Community player ratings from Chelsea’s poor effort against the slumping defending champions",
+      "source": "SB Nation",
+      "url": "https://weaintgotnohistory.sbnation.com/2025/1/27/24352750/manchester-city-3-1-chelsea-player-ratings-sanchez-goes-for-the-individual-record-low",
+      "published_at": "2025-01-27T08:04:08Z",
+      "sentiment": {
+        "score": -0.28,
+        "subjectivity": 0.4333333333333333,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.4566666666666666
+      }
+    },
+    {
+      "title": "Enzo Maresca Needs Ruthless Streak To Save Chelsea From Destruction",
+      "description": "Given that the West London side has spent a quarter of a billion on its midfield, it is truly bizarre that they are left with such a weak option in this position.",
+      "source": "Forbes",
+      "url": "https://www.forbes.com/sites/zakgarnerpurkis/2025/01/26/enzo-maresca-needs-ruthless-streak-to-save-chelsea-from--destruction/",
+      "published_at": "2025-01-26T20:49:21Z",
+      "sentiment": {
+        "score": -0.3075,
+        "subjectivity": 0.4708333333333334,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.43041666666666656
+      }
+    },
+    {
+      "title": "Premier League: Erling Haaland Leads Manchester City Revival To Beat Chelsea",
+      "description": "Erling Haaland inspired a Manchester City fightback from 1-0 down to beat Chelsea 3-1 and move into the Premier League top four at the Blues' expense.",
+      "source": "NDTV News",
+      "url": "https://sports.ndtv.com/english-premier-league/premier-league-erling-haaland-leads-manchester-city-revival-to-beat-chelsea-7561025",
+      "published_at": "2025-01-26T02:47:39Z",
+      "sentiment": {
+        "score": 0.10333333333333333,
+        "subjectivity": 0.3944444444444445,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4238888888888888
+      }
+    }
+  ]
+}

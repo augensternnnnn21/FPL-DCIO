@@ -48,5 +48,9 @@ mkdocstrings>=0.15.2  # Python文档自动生成
 # New dependencies
 torch>=1.9.0
 python-dateutil>=2.8.2
-feedparser>=6.0.0
-newsapi-python>=0.2.6 
+feedparser>=6.0.10
+newsapi-python>=0.2.7
+meteostat>=1.1.0
+fake-useragent>=1.1.1
+aiohttp[speedups]>=3.8.0
+tenacity>=8.2.2 

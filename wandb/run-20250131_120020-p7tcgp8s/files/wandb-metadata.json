@@ -1,0 +1,16 @@
+{
+  "os":  "macOS-14.6-arm64-arm-64bit",
+  "python":  "CPython 3.9.6",
+  "startedAt":  "2025-01-31T04:00:20.830903Z",
+  "program":  "/Users/zhangyufei/Desktop/FPL-DCIO-new_version/saman_project/train.py",
+  "codePath":  "saman_project/train.py",
+  "git":  {
+    "remote":  "https://github.com/augensternnnnn21/FPL-DCIO.git",
+    "commit":  "9e22350a56eb7048ab5ea1bbe97a49ebea45e958"
+  },
+  "email":  "zyf080424@gmail.com",
+  "root":  "/Users/zhangyufei/Desktop/FPL-DCIO-new_version",
+  "host":  "zhangyufeideMacBook-Air.local",
+  "executable":  "/Library/Developer/CommandLineTools/usr/bin/python3",
+  "codePathLocal":  "saman_project/train.py"
+}

@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-01-29T21:04:00.951116",
+  "data": [
+    {
+      "title": "AEEE 2025: Registration Window To Close On January 30, Check Details",
+      "description": "Candidates should go through the AEEE 2025 information brochure and check the eligibility criteria before filling out the application form.",
+      "source": "NDTV News",
+      "url": "https://www.ndtv.com/education/aeee-2025-registration-window-to-close-on-january-30-check-details-7579383",
+      "published_at": "2025-01-28T12:17:42Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    }
+  ]
+}

@@ -1,0 +1,537 @@
+{
+  "timestamp": "2025-01-29T21:04:00.307173",
+  "data": [
+    {
+      "title": "US military practices rescuing astronauts from the sea (photos)",
+      "description": "A U.S. military joint task force did some training recently off the Florida coast, preparing to help rescue astronauts from the ocean if need be.",
+      "source": "Space.com",
+      "url": "https://www.space.com/space-exploration/missions/us-military-practices-rescuing-astronauts-from-the-sea-photos",
+      "published_at": "2025-01-26T14:00:00Z",
+      "sentiment": {
+        "score": -0.04,
+        "subjectivity": 0.15,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.595
+      }
+    },
+    {
+      "title": "No. 7 Houston rallies, more than once, to down No. 12 Kansas 92-86 in double OT",
+      "description": "J’Wan Roberts scored 24 points, including six in two overtime periods, and No. 7 Houston beat No. 12 Kansas 92-86",
+      "source": "Fox Sports",
+      "url": "https://www.foxsports.com/stories/college-basketball/no-7-houston-rallies-more-than-once-down-no-12-kansas-92-86-double-ot",
+      "published_at": "2025-01-26T03:02:29Z",
+      "sentiment": {
+        "score": 0.021666666666666664,
+        "subjectivity": 0.23472222222222225,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5356944444444444
+      }
+    },
+    {
+      "title": "AP College Basketball Poll 2025: Complete Week 13 Men's Rankings Released",
+      "description": "Auburn continues to reside in the No. 1 spot in the Associated Press Top 25 poll after surviving a scare Saturday against Tennessee. Kentucky wasn't so…",
+      "source": "Bleacher Report",
+      "url": "https://bleacherreport.com/articles/10152324-ap-college-basketball-poll-2025-complete-week-13-mens-rankings-released",
+      "published_at": "2025-01-27T18:16:04Z",
+      "sentiment": {
+        "score": 0.18,
+        "subjectivity": 0.45,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.385
+      }
+    },
+    {
+      "title": "Oral Roberts Golden Eagles vs. Neb.-Omaha Mavericks: How to watch NCAA Basketball online, TV channel, live stream info, start time",
+      "description": "How to watch Oral Roberts vs. Nebraska Omaha basketball game",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/college-basketball/news/oral-roberts-golden-eagles-vs-neb-omaha-mavericks-how-to-watch-ncaa-basketball-online-tv-channel-live-stream-29543280/",
+      "published_at": "2025-01-26T02:00:55Z",
+      "sentiment": {
+        "score": 0.007272727272727264,
+        "subjectivity": 0.4666666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3733333333333334
+      }
+    },
+    {
+      "title": "No. 7 Houston outlasts No. 12 Kansas in 2OT",
+      "description": "J'Wan Roberts scored 24 points, including six in two overtime periods, and No. 7 Houston beat No. 12 Kansas in double overtime on Saturday night.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/mens-college-basketball/story/_/id/43565811/jwan-roberts-no-7-houston-no-12-kansas-double-ot",
+      "published_at": "2025-01-26T03:09:15Z",
+      "sentiment": {
+        "score": -0.06,
+        "subjectivity": 0.07500000000000001,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.6475
+      }
+    },
+    {
+      "title": "Neo-Nazi refuses to sign bail forms as 14 others involved in Australia Day rally released",
+      "description": "Neo-Nazi leader refuses to sign his bail forms while 14 men were granted bail after their involvement in a far-right rally on the weekend.",
+      "source": "ABC News (AU)",
+      "url": "https://www.abc.net.au/news/2025-01-28/neo-nazi-refuses-to-sign-bail-forms/104866198",
+      "published_at": "2025-01-28T05:38:31Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "College basketball rankings: Michigan State up to No. 7, Purdue cracks top 10",
+      "description": "FOX Sports national college basketball writer John Fanta reveals his latest top 25 rankings, with Michigan State and Purdue rising.",
+      "source": "Fox Sports",
+      "url": "https://www.foxsports.com/stories/college-basketball/college-basketball-rankings-michigan-state-up-no-7-purdue-cracks-top-10",
+      "published_at": "2025-01-27T01:41:52Z",
+      "sentiment": {
+        "score": 0.3,
+        "subjectivity": 0.6333333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.25666666666666665
+      }
+    },
+    {
+      "title": "Cameron Diaz is Back in Action for first film in more than 10 years",
+      "description": "A comedy-action flick about retired spies being pulled out of suburban bliss to save the world, Back in Action is a silly, diverting film. But it's a delight to see Cameron Diaz return to the big screen.",
+      "source": "ABC News (AU)",
+      "url": "https://www.abc.net.au/news/2025-01-27/back-in-action-review-cameron-diaz-jamie-foxx/104846022",
+      "published_at": "2025-01-26T19:05:20Z",
+      "sentiment": {
+        "score": 0.23,
+        "subjectivity": 0.22314814814814815,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.6037962962962964
+      }
+    },
+    {
+      "title": "Miles Kelly's clutch 3-pointer lifts No. 1 Auburn over No. 6 Tennessee 53-51",
+      "description": "AUBURN, Ala. (AP) — Miles Kelly hit a go-ahead 3-pointer with 30 seconds remaining and Johni Broome had 16 points and 13 rebounds in his return to the lineup as No. 1 Auburn extended its winning streak to 11 games with a 53-51 win over No. 6 Tennessee on Satu…",
+      "source": "Yahoo Entertainment",
+      "url": "https://ca.sports.yahoo.com/news/miles-kellys-clutch-3-pointer-043911313.html",
+      "published_at": "2025-01-26T04:39:11Z",
+      "sentiment": {
+        "score": 0.6566666666666667,
+        "subjectivity": 0.575,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.4175
+      }
+    },
+    {
+      "title": "Vulnerability Summary for the Week of January 13, 2025",
+      "description": "High Vulnerabilities\r\n\n\n\nPrimaryVendor -- Product\nDescription\nPublished\nCVSS Score\nSource Info\n\n\n1000 Projects--Campaign Management System Platform for Women \nA vulnerability w…",
+      "source": "Cisa.gov",
+      "url": "https://www.cisa.gov/news-events/bulletins/sb25-026",
+      "published_at": "2025-01-27T02:49:50Z",
+      "sentiment": {
+        "score": 0.096,
+        "subjectivity": 0.5399999999999999,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.322
+      }
+    },
+    {
+      "title": "Ohio Turnpike service plaza named best truck stop in U.S.",
+      "description": "Based on ratings and reviews in the Trucker Path app over the last year, the top 100 truck stops of 2025 have been revealed. The...",
+      "source": "Overdriveonline.com",
+      "url": "https://www.overdriveonline.com/truck-stops/article/15713092/trucker-path-reveals-top-truck-stops-of-2025",
+      "published_at": "2025-01-27T08:51:25Z",
+      "sentiment": {
+        "score": 0.3,
+        "subjectivity": 0.2888888888888889,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4977777777777777
+      }
+    },
+    {
+      "title": "The Problem With a President’s “First 100 Days”",
+      "description": "A staple of American political discourse has generated unrealistic expectations about how democracy functions.",
+      "source": "Foreign Policy",
+      "url": "https://foreignpolicy.com/2025/01/28/president-100-days-trump-reagan/",
+      "published_at": "2025-01-28T11:00:17Z",
+      "sentiment": {
+        "score": -0.23750000000000002,
+        "subjectivity": 0.35833333333333334,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.5091666666666665
+      }
+    },
+    {
+      "title": "Bringing Arendelle to Winnipeg: hundreds of youth audition to be the next Anna and Elsa",
+      "description": "More than 300 kids auditioned for the role of young Anna and Elsa in Rainbow Stage’s upcoming production of Frozen — triple the amount of submissions the theatre company expected to receive since casting calls were put out before the holidays.",
+      "source": "CBC News",
+      "url": "https://www.cbc.ca/news/canada/manitoba/rainbow-stage-musical-production-frozen-audition-1.7442047",
+      "published_at": "2025-01-26T21:08:26Z",
+      "sentiment": {
+        "score": 0.075,
+        "subjectivity": 0.325,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4725
+      }
+    },
+    {
+      "title": "J’Wan Roberts scores 24 and No. 7 Houston downs No. 12 Kansas 92-86 in double OT",
+      "description": "J’Wan Roberts scored 24 points, including six in two overtime periods, and No. 7 Houston beat No. 12 Kansas 92-86. Roberts hit two free throws with 13.9 seconds left in regulation to tie the game. At the end of the first overtime, Houston (16-3, 8-0 Big 12) g…",
+      "source": "seattlepi.com",
+      "url": "https://www.seattlepi.com/sports/article/j-wan-roberts-scores-24-and-no-7-houston-downs-20056406.php",
+      "published_at": "2025-01-26T03:16:04Z",
+      "sentiment": {
+        "score": -0.011250000000000001,
+        "subjectivity": 0.24166666666666667,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5308333333333333
+      }
+    },
+    {
+      "title": "Doug Emhoff returns to career as private attorney",
+      "description": "Former second gentleman Doug Emhoff is returning to his career as a private attorney after his wife, former Vice President Kamala Harris, lost the presidential election. A longtime entertainment attorney, Emhoff has joined Willkie Farr & Gallagher as a partne…",
+      "source": "Freerepublic.com",
+      "url": "https://freerepublic.com/focus/f-news/4292993/posts",
+      "published_at": "2025-01-27T17:07:26Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.15,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.595
+      }
+    },
+    {
+      "title": "The Supreme Court could invalidate birthright citizenship",
+      "description": "The birthright citizenship dispute is surely destined for the United States Supreme Court. Is there any legal authority for that court to issue a decision abrogating birthright citizenship for the offspring of illegal aliens? The foundational rock-bottom gran…",
+      "source": "Freerepublic.com",
+      "url": "https://freerepublic.com/focus/f-news/4292778/posts",
+      "published_at": "2025-01-26T17:12:16Z",
+      "sentiment": {
+        "score": 0.03999999999999999,
+        "subjectivity": 0.5296296296296296,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3292592592592593
+      }
+    },
+    {
+      "title": "Graham: ‘I Fear That You Will Get More Violence’ After Trump’s J6 Pardons",
+      "description": "Senator Lindsey Graham (R-SC) said Sunday on NBC’s “Meet the Press” that he was afraid there will be “more violence” as a result of President Donald Trump’s January 6 pardons. Host Kristen Welker said, “Your colleague, Senator Tim Kaine, had this to say about…",
+      "source": "Freerepublic.com",
+      "url": "https://freerepublic.com/focus/f-news/4292791/posts",
+      "published_at": "2025-01-26T18:05:07Z",
+      "sentiment": {
+        "score": 0.08,
+        "subjectivity": 0.6333333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.25666666666666665
+      }
+    },
+    {
+      "title": "Barron Trump is targeted in cruel SNL skit: 'Oh, it's bad'",
+      "description": "Barron Trump was the target of a cruel joke on Saturday Night Live this weekend, with one comedian mocking the 18-year-old's impressive height. The comedy sketch made a pointed hit at the 6-foot-9-inch NYU student in the first SNL show since Trump's historic …",
+      "source": "Freerepublic.com",
+      "url": "https://freerepublic.com/focus/f-chat/4292792/posts",
+      "published_at": "2025-01-26T18:09:01Z",
+      "sentiment": {
+        "score": -0.11259740259740258,
+        "subjectivity": 0.6428571428571427,
+        "positive_words": 1,
+        "negative_words": 1,
+        "confidence": 0.3700000000000001
+      }
+    },
+    {
+      "title": "TRANSLATION OF STATEMENT FROM PRESIDENT OF COLOMBIA",
+      "description": "TRANSLATION OF STATEMENT FROM PRESIDENT OF COLOMBIA. Trump, I don't really like travelling to the US, it's a bit boring, but I confess that there are some commendable things. I like going to the black neighborhoods of Washington, where I saw an entire fight i…",
+      "source": "Freerepublic.com",
+      "url": "https://freerepublic.com/focus/f-news/4292855/posts",
+      "published_at": "2025-01-26T22:13:17Z",
+      "sentiment": {
+        "score": -0.145,
+        "subjectivity": 0.5645833333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3047916666666666
+      }
+    },
+    {
+      "title": "Weekly Climate and Energy News Roundup #628",
+      "description": "“Laws are made for men of ordinary understanding and should, therefore, be construed by the ordinary rules of common sense. Their meaning is not to be sought for in metaphysical subtleties which may make anything mean everything or nothing at pleasure.”—Thoma…",
+      "source": "Wattsupwiththat.com",
+      "url": "https://wattsupwiththat.com/2025/01/27/weekly-climate-and-energy-news-roundup-628/",
+      "published_at": "2025-01-27T10:00:00Z",
+      "sentiment": {
+        "score": -0.166875,
+        "subjectivity": 0.546875,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.31718749999999996
+      }
+    },
+    {
+      "title": "Listen to The Country online: Hawke’s Bay grower Paul Paynter on Cyclone Gabrielle’s impact",
+      "description": "Will Wilson, Paul Paynter, Mike Petersen, Adam Thompson, Rhys Roberts, Phil Duncan.",
+      "source": "New Zealand Herald",
+      "url": "https://www.nzherald.co.nz/the-country/news/listen-to-the-country-online-hawkes-bay-grower-paul-paynter-on-cyclone-gabrielles-impact/266JWQSAPBEUBLA76MUIYPIYZY/",
+      "published_at": "2025-01-28T00:21:00Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "‘Blood, feces and terror’ — judges are raging over Trump pardons (Jonathan Turley)",
+      "description": "Even though President Trump had made it a campaign pledge to pardon those involved in the Jan. 6, 2021, Capitol riot, the roughly 1,500 pardons Trump issued on his first day produced familiar reactions from politicians and pundits. In Philadelphia, District A…",
+      "source": "Freerepublic.com",
+      "url": "https://freerepublic.com/focus/f-news/4292780/posts",
+      "published_at": "2025-01-26T17:15:45Z",
+      "sentiment": {
+        "score": 0.10500000000000001,
+        "subjectivity": 0.41111111111111115,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.41222222222222216
+      }
+    },
+    {
+      "title": "Talking Points: Sunderland defensive disaster-class gifts Plymouth a point",
+      "description": "The lads were punished for trying to hang on to a goal lead against rock-bottom Pilgrims. Bomber looks at the main takeaways from the game.",
+      "source": "SB Nation",
+      "url": "https://rokerreport.sbnation.com/2025/1/26/24351940/talking-points-sunderland-defensive-disaster-class-gifts-plymouth-a-point",
+      "published_at": "2025-01-26T06:00:00Z",
+      "sentiment": {
+        "score": -0.07,
+        "subjectivity": 0.3666666666666667,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4433333333333333
+      }
+    },
+    {
+      "title": "Blues coach Jim Montgomery is left searching for solutions after another poor start",
+      "description": "Blues coach Jim Montgomery keeps seeking ways to spur stronger starts from his sputtering team.",
+      "source": "STLtoday.com",
+      "url": "https://www.stltoday.com/sports/professional/nhl/blues/blues-coach-jim-montgomery-is-left-searching-for-solutions-after-another-poor-start/article_c4ecdd28-d9f5-11ef-9891-1714a6aeb1f8.html",
+      "published_at": "2025-01-26T12:00:00Z",
+      "sentiment": {
+        "score": -0.32,
+        "subjectivity": 0.3,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.5499999999999999
+      }
+    },
+    {
+      "title": "Repression of CADM1 transcription by HPV type 18 is mediated by three-dimensional rearrangement of promoter-enhancer interactions",
+      "description": "Author summary Infection with oncogenic HPV is the cause of numerous cancer types, which generally arise after persistent HPV infection. Upon infection, HPV alters the gene expression profile of infected cells to facilitate virus replication and persistence. …",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1012506",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": 0.015000000000000005,
+        "subjectivity": 0.5,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.35
+      }
+    },
+    {
+      "title": "Maternal mental health matters: Indicators for perinatal mental health—A scoping review",
+      "description": "Perinatal mental health disorders are a significant contributor to morbidity and mortality in childbearing women. The World Health Organization recommends all women be screened for mental health disorders postnatally and have diagnostic and management service…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0317998",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": -0.0030000000000000057,
+        "subjectivity": 0.335,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.46549999999999997
+      }
+    },
+    {
+      "title": "AP Poll Top 25 College Basketball Rankings released after Week 12",
+      "description": "AP Poll Top 25 College Basketball Rankings released after Week 12on3.com",
+      "source": "On3.com",
+      "url": "https://www.on3.com/news/ap-poll-top-25-college-basketball-rankings-released-after-week-12/",
+      "published_at": "2025-01-27T18:08:39Z",
+      "sentiment": {
+        "score": 0.3,
+        "subjectivity": 0.5,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.35
+      }
+    },
+    {
+      "title": "Assessment of health behaviors of primary school teachers based on their nutritional knowledge and physical activity: A cross-sectional study in the Asir Region",
+      "description": "Background Primary school teachers play a critical role as educators in imparting healthy eating behaviour and the importance of physical activity to prevent health issues. However, the teachers’ health behaviors have not been studied much, particularly in Sa…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0318146",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": 0.12571428571428572,
+        "subjectivity": 0.4170068027210885,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.40809523809523807
+      }
+    },
+    {
+      "title": "Inhibition of Src signaling induces autophagic killing of Toxoplasma gondii via PTEN-mediated deactivation of Akt",
+      "description": "Author summary Toxoplasma gondii, a causative agent of retinitis and encephalitis, survives within host cells by avoiding autophagy-dependent degradation by the lysosome. While T. gondii activates EGFR to avoid autophagic killing, EGFR expression is limited i…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1012907",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": -0.04285714285714285,
+        "subjectivity": 0.14285714285714285,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.6
+      }
+    },
+    {
+      "title": "Hatching of whipworm eggs induced by bacterial contact is serine-protease dependent",
+      "description": "Author summary Human whipworms are parasites that cause the gastrointestinal disease trichuriasis in millions of people around the world. Infections occur when whipworm eggs, ingested in contaminated food and water, hatch in the intestine in response to gut b…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1012502",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.1,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.63
+      }
+    },
+    {
+      "title": "A study of Chinese enterprises’ business models to determine the impact of dynamic capabilities on innovation and performance",
+      "description": "Small and medium-sized enterprises (SMEs) can gain a competitive advantage by implementing business model innovation (BMI), which is characterized as irreversible changes to a company’s business model. However, BMI is often associated with high risk, uncertai…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0310854",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": -0.0135,
+        "subjectivity": 0.2766666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5063333333333333
+      }
+    },
+    {
+      "title": "NFL picks this week, odds, prop bets: 2025 NFC, AFC Championship expert predictions against the spread, SGP",
+      "description": "SportsLine's top NFL experts reveal their NFL picks, NFL predictions, NFL betting tips, and NFL best bets for Chiefs vs. Bills and Eagles vs. Commanders",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/nfl-picks-this-week-odds-prop-bets-2025-nfc-afc-championship-expert-predictions-against-the-spread-sgp/",
+      "published_at": "2025-01-26T15:41:18Z",
+      "sentiment": {
+        "score": 0.44999999999999996,
+        "subjectivity": 0.4,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.42
+      }
+    },
+    {
+      "title": "NFL Draft 2025: Shrine Bowl takeaways and standouts, including a QB who could be taken earlier than expected",
+      "description": "With Shedeur Sanders sitting out, Kyle McCord was the top-performing QB",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/draft/news/nfl-draft-2025-shrine-bowl-takeaways-and-standouts-including-a-qb-who-could-be-taken-earlier-than-expected/",
+      "published_at": "2025-01-27T20:33:39Z",
+      "sentiment": {
+        "score": -0.03,
+        "subjectivity": 0.45,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.385
+      }
+    },
+    {
+      "title": "What were the positives and negatives from Sunderland’s draw with Plymouth?",
+      "description": "Despite recovering from 0-1 down to lead 2-1, the Lads were pegged back by the visitors, dropping two points in the process. What did our writers make of the game?",
+      "source": "SB Nation",
+      "url": "https://rokerreport.sbnation.com/2025/1/26/24350137/what-were-the-positives-and-negatives-from-sunderlands-draw-with-plymouth",
+      "published_at": "2025-01-26T06:00:00Z",
+      "sentiment": {
+        "score": -0.11111111111111112,
+        "subjectivity": 0.22962962962962963,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5392592592592592
+      }
+    },
+    {
+      "title": "Fan Letters: “Trying to clear up the mystery of Pride Park!”",
+      "description": "RR reader James has a theory as to why Wilson Isidor’s goal was disallowed, and there are also thoughts on Saturday’s draw with Plymouth. Got something to say? Email us: RokerReport@yahoo.co.uk",
+      "source": "SB Nation",
+      "url": "https://rokerreport.sbnation.com/2025/1/28/24352785/fan-letters-trying-to-clear-up-the-mystery-of-pride-park",
+      "published_at": "2025-01-28T06:00:00Z",
+      "sentiment": {
+        "score": 0.07500000000000001,
+        "subjectivity": 0.3833333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.43166666666666664
+      }
+    },
+    {
+      "title": "Wataru Endo: “I Always Try To Make A Difference”",
+      "description": "The Japanese midfielder spoke about his transition to Liverpool and the intensity, as well as understanding his role in the squad",
+      "source": "SB Nation",
+      "url": "https://liverpooloffside.sbnation.com/liverpool-fc-news-coverage/2025/1/28/24352927/wataru-endo-i-always-try-to-make-a-difference-liverpool-jurgen-klopp-arne-slot-japan-pl-ucl-fa-cup",
+      "published_at": "2025-01-28T09:30:00Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "Premier League promotion hopefuls Burnley and Leeds play out drab draw",
+      "description": "Promotion hopefuls Burnley and Leeds cancelled each other out in a drab goalless draw at Turf Moor which showed the limitations of two sides who hope to make this a Premier League fixture next term.",
+      "source": "Independent.ie",
+      "url": "https://www.independent.ie/sport/soccer/premier-league-promotion-hopefuls-burnley-and-leeds-play-out-drab-draw/a1138083932.html",
+      "published_at": "2025-01-27T22:12:50Z",
+      "sentiment": {
+        "score": -0.0375,
+        "subjectivity": 0.1875,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.56875
+      }
+    },
+    {
+      "title": "How are Sunderland shaping up in the final stages of the January transfer window?",
+      "description": "As clubs throughout the league aim to strengthen their squads this week, we asked our writers for their thoughts on the current state of play on Wearside",
+      "source": "SB Nation",
+      "url": "https://rokerreport.sbnation.com/2025/1/28/24352844/how-are-sunderland-shaping-up-in-the-final-stages-of-the-january-transfer-window",
+      "published_at": "2025-01-28T06:00:00Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.7,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.21000000000000002
+      }
+    }
+  ]
+}

@@ -1,0 +1,523 @@
+{
+  "timestamp": "2025-01-29T21:04:07.414398",
+  "data": [
+    {
+      "title": "The tumultuous history of America's pioneering all-metal house, which neighbors wanted to tear down and architects fought to save",
+      "description": "The Aluminaire House, built as a prototype of what housing of the future could be, has been saved by enthusiasts many times over its 94-year history.",
+      "source": "Business Insider",
+      "url": "https://www.businessinsider.com/aluminaire-house-journey-from-new-york-to-palm-springs-preservation-2025-1",
+      "published_at": "2025-01-26T11:26:02Z",
+      "sentiment": {
+        "score": 0.06888888888888889,
+        "subjectivity": 0.30462962962962964,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4867592592592593
+      }
+    },
+    {
+      "title": "Patrick Mahomes' Wife Brittany Calls Out Bills Fans for 'Disgusting' Behavior",
+      "description": "Brittany Mahomes, Patrick Mahomes' wife, called out what she labeled \"disgusting\" behavior by Buffalo Bills fans earlier this season. In an Instagram story…",
+      "source": "Bleacher Report",
+      "url": "https://bleacherreport.com/articles/10152415-patrick-mahomes-wife-brittany-calls-out-bills-fans-for-disgusting-behavior",
+      "published_at": "2025-01-27T16:16:39Z",
+      "sentiment": {
+        "score": -0.39999999999999997,
+        "subjectivity": 0.8333333333333334,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.11666666666666663
+      }
+    },
+    {
+      "title": "Patrick Mahomes, Chiefs Beat Bills, Hyped By NFL Fans for 'Inevitable' Super Bowl Run",
+      "description": "It wasn't easy, but the Kansas City Chiefs completed their third straight climb to the mountaintop of the AFC. Star quarterback Patrick Mahomes led the Chiefs…",
+      "source": "Bleacher Report",
+      "url": "https://bleacherreport.com/articles/10152383-patrick-mahomes-chiefs-beat-bills-hyped-by-nfl-fans-for-inevitable-super-bowl-run",
+      "published_at": "2025-01-27T02:55:31Z",
+      "sentiment": {
+        "score": 0.11599999999999998,
+        "subjectivity": 0.58,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.294
+      }
+    },
+    {
+      "title": "A timeline of Tarek El Moussa and Christina Haack's romantic and professional relationship, from 'Flip or Flop' to 'The Flip Off'",
+      "description": "HGTV stars Tarek El Moussa and Christina Haack continued filming together after they divorced in 2018. Their show \"Flip or Flop\" ended in 2022.",
+      "source": "Business Insider",
+      "url": "https://www.businessinsider.com/christina-haack-tarek-el-moussa-relationship-hgtv-timeline",
+      "published_at": "2025-01-27T21:29:49Z",
+      "sentiment": {
+        "score": 0.03,
+        "subjectivity": 0.3,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.48999999999999994
+      }
+    },
+    {
+      "title": "Just Like Heaven Reveals 2025 Lineup with Vampire Weekend, Rilo Kiley & TV on the Radio",
+      "description": "The one-day indie sleaze festival in Pasadena, CA also promises Empire of the Sun, Bloc Party, Courtney Barnett, Toro y Moi, and more.\nJust Like Heaven Reveals 2025 Lineup with Vampire Weekend, Rilo Kiley & TV on the Radio\nScoop Harrison",
+      "source": "Consequence.net",
+      "url": "https://consequence.net/2025/01/just-like-heaven-2025-lineup-vampire-weekend-rilo-kiley/",
+      "published_at": "2025-01-27T16:33:23Z",
+      "sentiment": {
+        "score": 0.15,
+        "subjectivity": 0.25,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5249999999999999
+      }
+    },
+    {
+      "title": "Bowie’s Berlin: Up against the wall",
+      "description": "David Bowie’s 1987 concert in West Berlin could be heard on the other side of the wall in Eastern Germany.",
+      "source": "Al Jazeera English",
+      "url": "https://www.aljazeera.com/features/2025/1/26/bowies-berlin-up-against-the-wall",
+      "published_at": "2025-01-26T08:57:48Z",
+      "sentiment": {
+        "score": -0.075,
+        "subjectivity": 0.375,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4375
+      }
+    },
+    {
+      "title": "Rescued Intermountain Intertribal Boarding School Murals On View In Utah",
+      "description": "Intermountain was the largest boarding school for Native Americans in the United States, and throughout its operation housed over 20,000 students from 99 tribes.",
+      "source": "Forbes",
+      "url": "https://www.forbes.com/sites/chaddscott/2025/01/27/rescued-intermountain-intertribal-boarding-school-murals-on-view-in-utah/",
+      "published_at": "2025-01-28T00:25:33Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "Chiefs Rookie Xavier Worthy Gets Revenge Vs. The Bills",
+      "description": "The rookie, who led all receivers in the AFC Championship Game with six catches for 85 yards, was acquired in a draft-day trade with the Buffalo Bills.",
+      "source": "Forbes",
+      "url": "https://www.forbes.com/sites/jefffedotin/2025/01/26/chiefs-rookie-xavier-worthy-gets-revenge-vs-the-bills/",
+      "published_at": "2025-01-27T04:35:09Z",
+      "sentiment": {
+        "score": -0.02000000000000001,
+        "subjectivity": 0.7,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.21000000000000002
+      }
+    },
+    {
+      "title": "Chiefs advance to Super Bowl LIX with a 32-29 win over Bills with a chance for a three-peat",
+      "description": "Patrick Mahomes threw a touchdown and ran for two touchdowns to lead the Chiefs to another AFC Championship Game win.",
+      "source": "NBCSports.com",
+      "url": "https://www.nbcsports.com/nfl/profootballtalk/rumor-mill/news/chiefs-advance-to-super-bowl-lix-with-a-32-29-win-over-bills-with-a-chance-for-a-three-peat",
+      "published_at": "2025-01-27T02:58:43Z",
+      "sentiment": {
+        "score": 0.43,
+        "subjectivity": 0.4666666666666667,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.4333333333333333
+      }
+    },
+    {
+      "title": "Marine heatwave suspected cause of mass fish deaths in WA",
+      "description": "Authorities believe marine heatwave conditions may have led to the death of around 30,000 fish at Gnoorea Beach, south of Karratha.",
+      "source": "ABC News (AU)",
+      "url": "https://www.abc.net.au/news/2025-01-28/marine-heatwave-pilbara-mass-fish-deaths/104852574",
+      "published_at": "2025-01-27T22:06:20Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "Victoria's smallest council in turmoil just months into new term",
+      "description": "The Borough of Queenscliffe is in a state of upheaval, amid an investigation into allegations its CEO threatened to \"take apart\" a councillor. Its most popular councillor is also considering quitting.",
+      "source": "ABC News (AU)",
+      "url": "https://www.abc.net.au/news/2025-01-27/queenscliffe-council-turmoil-ceo/104850146",
+      "published_at": "2025-01-26T18:17:09Z",
+      "sentiment": {
+        "score": 0.24727272727272726,
+        "subjectivity": 0.6181818181818182,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.2672727272727273
+      }
+    },
+    {
+      "title": "Miss Valley State Delta Devils vs. Southern U. Jaguars live stream info, start time, TV channel: How to watch NCAA Basketball on TV, stream online",
+      "description": "How to watch Mississippi Valley State vs. Southern basketball game",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/college-basketball/news/miss-valley-state-delta-devils-vs-southern-u-jaguars-live-stream-info-start-time-tv-channel-how-to-watch-ncaa-29543304/",
+      "published_at": "2025-01-27T13:30:24Z",
+      "sentiment": {
+        "score": -0.23954545454545456,
+        "subjectivity": 0.225,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.6025
+      }
+    },
+    {
+      "title": "Watch Miss Valley State Delta Devils vs. Southern U. Jaguars: How to live stream, TV channel, start time for Monday's NCAA Basketball game",
+      "description": "How to watch Mississippi Valley State vs. Southern basketball game",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/college-basketball/news/watch-miss-valley-state-delta-devils-vs-southern-u-jaguars-how-to-live-stream-tv-channel-start-time-for-29543304/",
+      "published_at": "2025-01-27T14:10:43Z",
+      "sentiment": {
+        "score": -0.2796363636363637,
+        "subjectivity": 0.26,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.5780000000000001
+      }
+    },
+    {
+      "title": "Josh Allen, Bills fall just short again in another close playoff battle vs. Chiefs",
+      "description": "Buffalo once again had its season ended by K.C. \"To be the champs, you've got to beat the champs,\" Josh Allen said postgame.",
+      "source": "Fox Sports",
+      "url": "https://www.foxsports.com/stories/nfl/josh-allen-bills-fall-just-short-again-another-close-playoff-battle-vs-chiefs",
+      "published_at": "2025-01-27T15:47:03Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.3,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.48999999999999994
+      }
+    },
+    {
+      "title": "Super Bowl LIX preview: A first-look at Chiefs-Eagles rematch",
+      "description": "The Super Bowl LIX matchup is officially set. Here's an early look at how Chiefs-Eagles might play out on Feb. 9.",
+      "source": "Fox Sports",
+      "url": "https://www.foxsports.com/stories/nfl/super-bowl-lix-preview-chiefs-eagles-matchup",
+      "published_at": "2025-01-27T03:40:22Z",
+      "sentiment": {
+        "score": 0.15333333333333332,
+        "subjectivity": 0.5444444444444444,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3188888888888889
+      }
+    },
+    {
+      "title": "Grand Canyon earns 79-66 win over Utah Tech",
+      "description": "ST. GEORGE, Utah (AP) — JaKobe Coles' 18 points helped Grand Canyon defeat Utah Tech 79-66 on Saturday night.",
+      "source": "Yahoo Entertainment",
+      "url": "https://ca.sports.yahoo.com/news/grand-canyon-earns-79-66-043308436.html",
+      "published_at": "2025-01-26T04:33:08Z",
+      "sentiment": {
+        "score": 0.36,
+        "subjectivity": 0.7999999999999999,
+        "positive_words": 1,
+        "negative_words": 1,
+        "confidence": 0.26
+      }
+    },
+    {
+      "title": "How to watch Miss Valley State Delta Devils vs. Southern U. Jaguars: NCAA Basketball live stream info, TV channel, start time, game odds",
+      "description": "How to watch Mississippi Valley State vs. Southern basketball game",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/college-basketball/news/how-to-watch-miss-valley-state-delta-devils-vs-southern-u-jaguars-ncaa-basketball-live-stream-info-tv-channel-29543304/",
+      "published_at": "2025-01-28T02:50:31Z",
+      "sentiment": {
+        "score": -0.2796363636363637,
+        "subjectivity": 0.26,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.5780000000000001
+      }
+    },
+    {
+      "title": "People who live through two square years",
+      "description": "44*44=1936. 45*45=2025. This year! 46*46= 2116. Since my fake birthday is Oct 1, 1960 (I do not reveal my real birthday to try to prevent I...",
+      "source": "Computationalcomplexity.org",
+      "url": "https://blog.computationalcomplexity.org/2025/01/people-who-live-through-two-square-years.html",
+      "published_at": "2025-01-26T13:38:00Z",
+      "sentiment": {
+        "score": -0.025909090909090913,
+        "subjectivity": 0.6,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.27999999999999997
+      }
+    },
+    {
+      "title": "Chiefs Beat Bills, Seek Super Bowl 'Three-peat' Against Eagles",
+      "description": "The Kansas City Chiefs kept their bid for an historic third straight Super Bowl alive Sunday, holding off the Buffalo Bills 32-29 in an AFC Championship thriller to set up an NFL title clash with the Philadelphia Eagles.",
+      "source": "International Business Times",
+      "url": "https://www.ibtimes.com/chiefs-beat-bills-seek-super-bowl-three-peat-against-eagles-3761072",
+      "published_at": "2025-01-27T04:27:23Z",
+      "sentiment": {
+        "score": 0.09666666666666666,
+        "subjectivity": 0.35555555555555557,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.451111111111111
+      }
+    },
+    {
+      "title": "2025 Super Bowl: 5 bold predictions for Chiefs vs. Eagles, including an ode to Devin Hester and a surprise MVP",
+      "description": "Five early bold predictions for Super Bowl LIX",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/2025-super-bowl-5-bold-predictions-for-chiefs-vs-eagles-including-an-ode-to-devin-hester-and-a-surprise-mvp/",
+      "published_at": "2025-01-27T04:31:20Z",
+      "sentiment": {
+        "score": 0.17199999999999996,
+        "subjectivity": 0.5933333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.2846666666666667
+      }
+    },
+    {
+      "title": "2025 Super Bowl: Five bold predictions for Chiefs vs. Eagles, including an ode to Devin Hester, surprise MVP",
+      "description": "Five early bold predictions for Super Bowl LIX",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/2025-super-bowl-five-bold-predictions-for-chiefs-vs-eagles-including-an-ode-to-devin-hester-surprise-mvp/",
+      "published_at": "2025-01-27T13:36:01Z",
+      "sentiment": {
+        "score": 0.17199999999999996,
+        "subjectivity": 0.5933333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.2846666666666667
+      }
+    },
+    {
+      "title": "Dexter's Original Series Finale Plan Just Got A Clever Nod In Dexter: Original Sin (Which Will Likely Never Happen)",
+      "description": "Dexter: Original Sin made reference to the original plan for the ending of Dexter, even though it's almost impossible to use after New Blood.",
+      "source": "Screen Rant",
+      "url": "https://screenrant.com/dexter-original-sin-dexter-execution-finale-plan-reference-explainer/",
+      "published_at": "2025-01-28T10:30:17Z",
+      "sentiment": {
+        "score": 0.08522727272727272,
+        "subjectivity": 0.7859848484848485,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.14981060606060603
+      }
+    },
+    {
+      "title": "Who is playing in 2025 Super Bowl: Patrick Mahomes, Saquon Barkley headline rosters for Chiefs and Eagles",
+      "description": "Here's a look at who will be playing in Super Bowl LIX",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/who-is-playing-in-2025-super-bowl-patrick-mahomes-saquon-barkley-headline-rosters-for-chiefs-and-eagles/",
+      "published_at": "2025-01-27T18:08:28Z",
+      "sentiment": {
+        "score": 0.19999999999999998,
+        "subjectivity": 0.6666666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.23333333333333334
+      }
+    },
+    {
+      "title": "Chiefs vs. Bills matchup breakdown: Which team has the edge at each position in AFC Championship?",
+      "description": "The two AFC powerhouses go head to head for a trip to New Orleans",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/chiefs-vs-bills-matchup-breakdown-which-team-has-the-edge-at-each-position-in-afc-championship/",
+      "published_at": "2025-01-26T15:08:26Z",
+      "sentiment": {
+        "score": 0.0818181818181818,
+        "subjectivity": 0.45454545454545453,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3818181818181818
+      }
+    },
+    {
+      "title": "In 2003, Adrien Brody won an Oscar. He should win again for The Brutalist",
+      "description": "Nominated for 10 Academy Awards, including Best Picture, The Brutalist is an audacious epic about a Holocaust survivor and architect trying to rebuild his life in the US.",
+      "source": "ABC News (AU)",
+      "url": "https://www.abc.net.au/news/2025-01-28/the-brutalist-review/104851204",
+      "published_at": "2025-01-28T00:13:42Z",
+      "sentiment": {
+        "score": 0.5800000000000001,
+        "subjectivity": 0.3666666666666667,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.5033333333333333
+      }
+    },
+    {
+      "title": "Chiefs prevail in playoff classic vs. Bills, advance to Super Bowl LIX",
+      "description": "The Chiefs overcame the Bills in a tense fourth quarter, moving on to meet the Eagles in Super Bowl LIX in New Orleans.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/nfl/story/_/id/43573732/kansas-city-chiefs-buffalo-bills-2025-afc-championship-2024-nfl-playoffs",
+      "published_at": "2025-01-27T03:03:02Z",
+      "sentiment": {
+        "score": 0.06363636363636363,
+        "subjectivity": 0.4090909090909091,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4136363636363636
+      }
+    },
+    {
+      "title": "Kansas City Chiefs make the final in their bid for an unprecedented third straight Super Bowl",
+      "description": "Patrick Mahomes and co. are seeking an historic ‘three-peat’.",
+      "source": "The42",
+      "url": "https://www.the42.ie/chiefs-bills-6605940-Jan2025/",
+      "published_at": "2025-01-27T08:40:04Z",
+      "sentiment": {
+        "score": 0.11333333333333333,
+        "subjectivity": 0.4944444444444444,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.35388888888888886
+      }
+    },
+    {
+      "title": "32 Random Thoughts I Had While Rewatching The Shawshank Redemption",
+      "description": "I got busy watching, so I could get busy thinking.",
+      "source": "CinemaBlend",
+      "url": "https://www.cinemablend.com/movies/random-thoughts-i-had-while-rewatching-the-shawshank-redemption",
+      "published_at": "2025-01-26T16:33:00Z",
+      "sentiment": {
+        "score": -0.06000000000000001,
+        "subjectivity": 0.3666666666666667,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4433333333333333
+      }
+    },
+    {
+      "title": "2025 Fantasy Baseball Draft Prep: Josh Lowe, Bowden Francis highlight Frank Stampfl's Sleepers 1.0",
+      "description": "Target these undervalued sleepers in your Fantasy Baseball drafts",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/fantasy/baseball/news/2025-fantasy-baseball-draft-prep-josh-lowe-bowden-francis-highlight-frank-stampfls-sleepers-1-0/",
+      "published_at": "2025-01-27T15:17:44Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "Patrick Mahomes and Saquon Barkley might make history as Chiefs and Eagles collide again in Super Bowl 2025",
+      "description": "Super Bowl LIX is almost here -- and after months of waiting, NFL fans finally know the two teams that will battle it out for the Vince Lombardi Trophy and the right to be called &",
+      "source": "Marca",
+      "url": "https://www.marca.com/en/nfl/super-bowl/2025/01/27/6797cf60268e3e88308b4577.html",
+      "published_at": "2025-01-27T19:03:46Z",
+      "sentiment": {
+        "score": 0.14285714285714285,
+        "subjectivity": 0.7172619047619047,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.19791666666666674
+      }
+    },
+    {
+      "title": "Brittany Mahomes rips Bills fans over 'absolutely disgusting' Week 11 stunt after AFC title win",
+      "description": "Brittany Mahomes had a fiery message for the Buffalo Bills fan base after the Kansas City Chiefs beat their team in the AFC Championship on Sunday.",
+      "source": "Fox News",
+      "url": "https://www.foxnews.com/sports/brittany-mahomes-rips-bills-fans-over-absolutely-disgusting-week-11-stunt-after-afc-title-win",
+      "published_at": "2025-01-27T16:32:12Z",
+      "sentiment": {
+        "score": 2.7755575615628914e-17,
+        "subjectivity": 0.7999999999999999,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.20000000000000004
+      }
+    },
+    {
+      "title": "THE 'DOCUMENTARY SOURCE HYPOTHESIS'\nDoes Anyone Still Believe the 'Documentary Hypothesis'?",
+      "description": "Should Theology, Religious Studies and Comparative Religion Students Take the Documentary Hypothesis (JEDP System) Seriously? Are the 5 Books of Moses (The Torah), a hotch-potch of largely unconnected writings by later writers? The Intellectual Arrogance of J…",
+      "source": "Freerepublic.com",
+      "url": "https://freerepublic.com/focus/f-religion/4292807/posts",
+      "published_at": "2025-01-26T18:58:49Z",
+      "sentiment": {
+        "score": 0.013571428571428571,
+        "subjectivity": 0.2181547619047619,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5472916666666666
+      }
+    },
+    {
+      "title": "Simple Minds Announce 2025 North American Tour with Soft Cell and Modern English",
+      "description": "The 24-date outing launches in May 2024\nSimple Minds Announce 2025 North American Tour with Soft Cell and Modern English\nScoop Harrison",
+      "source": "Consequence.net",
+      "url": "https://consequence.net/2025/01/simple-minds-2025-north-american-tour/",
+      "published_at": "2025-01-27T14:38:50Z",
+      "sentiment": {
+        "score": 0.036000000000000004,
+        "subjectivity": 0.20142857142857143,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5589999999999999
+      }
+    },
+    {
+      "title": "30 players most likely to be moved at the NBA trade deadline",
+      "description": "Let’s jump around the league to find the players most likely to get relocated at the 2025 NBA trade deadline.",
+      "source": "SB Nation",
+      "url": "https://www.sbnation.com/nba/2025/1/27/24348661/nba-trade-deadline-rumors-cam-johnson-gabe-vincent-jonas-valanciunas",
+      "published_at": "2025-01-27T17:00:00Z",
+      "sentiment": {
+        "score": 0.15,
+        "subjectivity": 0.75,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.175
+      }
+    },
+    {
+      "title": "Blow by blow reports from AMA SX Round Three – Anaheim II",
+      "description": "2025 AMA Supercross Championship Round Three – Angel Stadium 250 Main Race Report Haiden Deegan scored the holeshot ahead of Julien Beaumer, but the KTM man was not going to allow the Yamaha youngster to have it all his own way and made a challenge at turn tw…",
+      "source": "Mcnews.com.au",
+      "url": "https://www.mcnews.com.au/blow-by-blow-reports-from-ama-sx-round-three-anaheim-ii/",
+      "published_at": "2025-01-26T21:51:15Z",
+      "sentiment": {
+        "score": 0.054999999999999986,
+        "subjectivity": 0.5333333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.32666666666666666
+      }
+    },
+    {
+      "title": "Final four to shoot for T20 glory",
+      "description": "Four teams remain in the Dandenong District Cricket Association’s (DDCA) T20 competition following the quarter final rounds on Tuesday 14 […]",
+      "source": "Starcommunity.com.au",
+      "url": "https://berwicknews.starcommunity.com.au/sport/2025-01-26/final-four-to-shoot-for-t20-glory/",
+      "published_at": "2025-01-26T04:00:15Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.7000000000000001,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.20999999999999994
+      }
+    },
+    {
+      "title": "Super Bowl 2025: Everything you need to know about the big game",
+      "description": "The teams are set for Super Bowl 2025. It will once again be the Philadelphia Eagles taking on the reigning back-to-back champions the Kansas City Chiefs.",
+      "source": "WSB Atlanta",
+      "url": "https://www.wsbtv.com/news/trending/super-bowl-2025-everything-you-need-know-about-big-game/GGAXHIZWVBAI5ETEMIMFBO2O6I/",
+      "published_at": "2025-01-27T16:34:40Z",
+      "sentiment": {
+        "score": 0.03999999999999999,
+        "subjectivity": 0.45833333333333326,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3791666666666667
+      }
+    }
+  ]
+}

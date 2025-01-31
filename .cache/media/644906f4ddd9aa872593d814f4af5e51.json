@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-01-29T21:04:00.737331",
+  "data": [
+    {
+      "title": "Fulham vs. Manchester United live stream: Premier League prediction, TV channel, where to watch online, time",
+      "description": "The Red Devils hit the road for a tricky Premier League clash in London",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/soccer/news/fulham-vs-manchester-united-live-stream-premier-league-prediction-tv-channel-where-to-watch-online-time/",
+      "published_at": "2025-01-26T00:40:22Z",
+      "sentiment": {
+        "score": 0.0409090909090909,
+        "subjectivity": 0.25,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5249999999999999
+      }
+    },
+    {
+      "title": "Fulham vs. Manchester United: Live Stream, Time, & How to Watch The Match Online",
+      "description": "United head to the cottage",
+      "source": "SB Nation",
+      "url": "https://thebusbybabe.sbnation.com/2025/1/26/24351997/fulham-vs-manchester-united-live-stream-time-how-to-watch-the-match-online",
+      "published_at": "2025-01-26T16:32:27Z",
+      "sentiment": {
+        "score": 0.0818181818181818,
+        "subjectivity": 0.5,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.35
+      }
+    }
+  ]
+}

@@ -156,4 +156,46 @@ class WeatherCollector:
             return 'Cold'
         elif weather_data['temperature'] > 30:
             return 'Hot'
-        return 'Moderate' 
+        return 'Moderate'
+
+    async def get_historical_weather(self, team: str, date: datetime) -> Optional[Dict]:
+        """获取历史天气数据
+        
+        Args:
+            team: 球队名称
+            date: 历史日期
+            
+        Returns:
+            包含天气信息的字典，如果获取失败则返回None
+        """
+        if team not in self.STADIUM_LOCATIONS:
+            print(f"未知球队: {team}")
+            return None
+            
+        location = self.STADIUM_LOCATIONS[team]
+        
+        try:
+            # 构建API URL
+            date_str = date.strftime('%Y-%m-%d')
+            url = f"http://api.weatherapi.com/v1/history.json?key={self.api_key}&q={location}&dt={date_str}"
+            
+            async with self.session.get(url) as response:
+                if response.status != 200:
+                    print(f"API请求失败: {response.status}")
+                    return None
+                    
+                data = await response.json()
+                
+                # 提取天气数据
+                day = data['forecast']['forecastday'][0]['day']
+                return {
+                    'temperature': day['avgtemp_c'],
+                    'precipitation': day['totalprecip_mm'],
+                    'wind_speed': day['maxwind_kph'],
+                    'humidity': day['avghumidity'],
+                    'condition': day['condition']['text']
+                }
+                
+        except Exception as e:
+            print(f"获取历史天气数据时出错: {str(e)}")
+            return None 

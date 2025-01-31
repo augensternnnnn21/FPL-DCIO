@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-01-29T21:04:02.097561",
+  "data": [
+    {
+      "title": "Enzo Maresca Needs Ruthless Streak To Save Chelsea From Destruction",
+      "description": "Given that the West London side has spent a quarter of a billion on its midfield, it is truly bizarre that they are left with such a weak option in this position.",
+      "source": "Forbes",
+      "url": "https://www.forbes.com/sites/zakgarnerpurkis/2025/01/26/enzo-maresca-needs-ruthless-streak-to-save-chelsea-from--destruction/",
+      "published_at": "2025-01-26T20:49:21Z",
+      "sentiment": {
+        "score": -0.3075,
+        "subjectivity": 0.4708333333333334,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.43041666666666656
+      }
+    }
+  ]
+}

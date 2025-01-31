@@ -1,0 +1,243 @@
+{
+  "timestamp": "2025-01-29T21:03:57.104264",
+  "data": [
+    {
+      "title": "Porsche takes historic 20th win in Daytona 24 Hours",
+      "description": "The number 7 963 LMDh fielded by Porsche Penske Motorsport secured the win at the 2025 24 Hours of Daytona The number 7 car was driven by Felipe Nasr, Nick Tandy, and Laurens Vanthoor The number 65 Ford Mustang GT3 was driven to victory in the GTD Pro class f…",
+      "source": "Motor Authority",
+      "url": "https://www.motorauthority.com/news/1145599_2025-24-hours-of-daytona-results-porsche",
+      "published_at": "2025-01-27T13:30:00Z",
+      "sentiment": {
+        "score": 0.5066666666666666,
+        "subjectivity": 0.2,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.6799999999999999
+      }
+    },
+    {
+      "title": "Why Comet G3 (ATLAS) will be 'remembered as the Great Comet of 2025' (photos)",
+      "description": "\"There is little question that, with its daylight display and spectacular evening apparition in a moonless sky, Comet 2024 G3 will long be remembered as the Great Comet of 2025, the first of its kind seen since Comet McNaught.\"",
+      "source": "Space.com",
+      "url": "https://www.space.com/the-universe/comets/why-comet-g3-atlas-will-be-remembered-as-the-great-comet-of-2025-photos",
+      "published_at": "2025-01-27T13:00:00Z",
+      "sentiment": {
+        "score": 0.44107142857142856,
+        "subjectivity": 0.6476190476190476,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.30666666666666664
+      }
+    },
+    {
+      "title": "Evacuation warning issued as bushfire burns towards Victorian town of Dimboola",
+      "description": "Residents in communities near two out-of-control bushfires in Victoria have been told to leave immediately, as wind changes threaten to push fires towards towns.",
+      "source": "ABC News (AU)",
+      "url": "https://www.abc.net.au/news/2025-01-27/little-desert-bushfire-dimboola-victoria/104865044",
+      "published_at": "2025-01-27T09:34:48Z",
+      "sentiment": {
+        "score": 0.06,
+        "subjectivity": 0.4,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.42
+      }
+    },
+    {
+      "title": "Daytona 24h, Hour 6: Acura ahead of Porsche as darkness descends",
+      "description": "Acura led the Daytona 24 Hours with Colin Braun as the opening round of the IMSA SportsCar Championship hit the six-hour mark. The #60 Meyer Shank Racing Acura ARX-06 swept into the lead as the race went green after a third caution period just before the end …",
+      "source": "autosport.com",
+      "url": "https://www.autosport.com/imsa/news/daytona-24h-hour-6-acura-ahead-of-porsche-as-darkness-descends/10691404/",
+      "published_at": "2025-01-26T01:29:30Z",
+      "sentiment": {
+        "score": -0.08,
+        "subjectivity": 0.2333333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5366666666666666
+      }
+    },
+    {
+      "title": "Daytona 24h: Porsche claims back-to-back wins after nail-biting finish",
+      "description": "Porsche held on to victory in the 63rd running of the Daytona 24 Hours after fending off late challenges from Acura and BMW.Felipe Nasr, Nick Tandy and Laurens Vanthoor took top honours in the factory #7 Porsche Penske Motorsport 963 LMDh after Nasr passed th…",
+      "source": "autosport.com",
+      "url": "https://www.autosport.com/imsa/news/daytona-24h-porsche-claims-back-to-back-wins-after-nail-biting-finish/10691601/",
+      "published_at": "2025-01-26T18:55:55Z",
+      "sentiment": {
+        "score": 0.3,
+        "subjectivity": 0.43333333333333335,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.4566666666666666
+      }
+    },
+    {
+      "title": "Hide Your Wallet: 2005!",
+      "description": "We have a very special Hide Your Wallet today! In celebration of our anniversary, we’re taking a look back at some of the major releases of 2005, some of which really changed the game, started trends, or even went on to become a Netflix series. What 2005 titl…",
+      "source": "Smartbitchestrashybooks.com",
+      "url": "https://smartbitchestrashybooks.com/2025/01/hide-your-wallet-2005/",
+      "published_at": "2025-01-28T10:00:50Z",
+      "sentiment": {
+        "score": 0.05314285714285715,
+        "subjectivity": 0.3685714285714286,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.442
+      }
+    },
+    {
+      "title": "I’ve Covered Climate Disasters for Decades. Now I Live on the Front Lines.",
+      "description": "There is only one certainty in our future: Unless we take action to reverse climate crisis, we will all be its victims.",
+      "source": "Truthout",
+      "url": "https://truthout.org/articles/ive-covered-climate-disasters-for-decades-now-i-live-on-the-front-lines/",
+      "published_at": "2025-01-26T16:46:05Z",
+      "sentiment": {
+        "score": 0.035454545454545454,
+        "subjectivity": 0.43125,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.39812499999999995
+      }
+    },
+    {
+      "title": "Penske's Porsches go 1-2 in Rolex 24 at Daytona",
+      "description": "Porsche Penske Motorsport won the Rolex 24 at Daytona endurance race for the second consecutive year, and third time overall.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/racing/story/_/id/43573297/roger-penske-porsches-finish-1-2-rolex-24-daytona",
+      "published_at": "2025-01-26T19:09:29Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "Tuesday: Hili dialogue",
+      "description": "Welcome to the Cruelest Day: Tuesday, January 28, 2025, and National Blueberry Pancake Day.  There is no chance that I will get any of these, but I do have a piece of shoofly pie (made by Pennsylvania Amish) for breakfast. It’s the perfect accompaniment to co…",
+      "source": "Whyevolutionistrue.com",
+      "url": "https://whyevolutionistrue.com/2025/01/28/tuesday-hili-dialogue-514/",
+      "published_at": "2025-01-28T12:45:31Z",
+      "sentiment": {
+        "score": 0.54,
+        "subjectivity": 0.95,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.03500000000000003
+      }
+    },
+    {
+      "title": "Holocaust distortion more dangerous than denial, warns departing IHRA chief Kathrin Meyer",
+      "description": "“The events of Oct. 7 have tragically proven us right. There cannot be a debate on antisemitism without looking into the completely biased criticism of Israel that we often see,” Meyer said.",
+      "source": "The Jerusalem Post",
+      "url": "https://www.jpost.com/diaspora/antisemitism/article-839547",
+      "published_at": "2025-01-28T04:08:10Z",
+      "sentiment": {
+        "score": 0.04285714285714285,
+        "subjectivity": 0.5839285714285714,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.29125
+      }
+    },
+    {
+      "title": "Daytona 24h, Hour 12: Porsche holds 1-2 at halfway point",
+      "description": "Porsche held a commanding lead halfway through the Daytona 24 Hours, with Felipe Nasr heading a 1-2 for the German manufacturer.Former Formula 1 driver Nasr propelled the factory #7 Porsche Penske Motorsport 963 LMDh to the front of the field after passing th…",
+      "source": "autosport.com",
+      "url": "https://www.autosport.com/imsa/news/daytona-24h-hour-12/10691434/",
+      "published_at": "2025-01-26T06:58:19Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "A single-cell atlas of the Culex tarsalis midgut during West Nile virus infection",
+      "description": "Author summary West Nile virus is the leading cause of mosquito-borne disease in N. America. Cx. tarsalis is a highly competent vector of WNV that plays a central role in the transmission and maintenance of WNV in nature. It is hypothesized that the permissib…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1012855",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": 0.15,
+        "subjectivity": 0.4583333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3791666666666667
+      }
+    },
+    {
+      "title": "Daytona 24h, Hour 18: Porsche continues to dominate as Tandy leads Campbell",
+      "description": "Porsche led the Daytona 24 Hours with its two factory Penske prototypes with six hours of the 2025 IMSA SportsCar Championship curtain-raiser remaining.The #7 Porsche 963 LMDh with Nick Tandy at the wheel held a narrow advantage of 5.6s over the sister #6 car…",
+      "source": "autosport.com",
+      "url": "https://www.autosport.com/imsa/news/daytona-24h-hour-18/10691532/",
+      "published_at": "2025-01-26T13:14:54Z",
+      "sentiment": {
+        "score": -0.12,
+        "subjectivity": 0.4,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.42
+      }
+    },
+    {
+      "title": "Repression of CADM1 transcription by HPV type 18 is mediated by three-dimensional rearrangement of promoter-enhancer interactions",
+      "description": "Author summary Infection with oncogenic HPV is the cause of numerous cancer types, which generally arise after persistent HPV infection. Upon infection, HPV alters the gene expression profile of infected cells to facilitate virus replication and persistence. …",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1012506",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": 0.015000000000000005,
+        "subjectivity": 0.5,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.35
+      }
+    },
+    {
+      "title": "The Depression, Anxiety, Stress Scales-21: Principal component analysis and evaluation of abbreviated versions in young adults with temporomandibular disorders",
+      "description": "Background The Depression, Anxiety, Stress Scales-21 (DASS-21) contain three subscales measuring depression, anxiety, and stress. Several abbreviated DASS-21 versions have been developed, demonstrating better clinical utility and measurement properties than t…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0316703",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": 0.105,
+        "subjectivity": 0.3,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.48999999999999994
+      }
+    },
+    {
+      "title": "M-Sec promotes the accumulation of intracellular HTLV-1 Gag puncta and the incorporation of Env into viral particles",
+      "description": "Author summary Human T-cell leukemia virus type 1 (HTLV-1) causes an aggressive blood cancer known as ATL and a neurodegenerative condition known as HAM/TSP. HTLV-1 infects CD4+ T lymphocytes, and induces or upregulates the expression of a wide array of cellu…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1012919",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": -0.03,
+        "subjectivity": 0.25,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5249999999999999
+      }
+    },
+    {
+      "title": "Penn State hires Jim Knowles from Ohio State, making him college football's highest-paid defensive coordinator",
+      "description": "Knowles has posted four straight top-15 defenses between Ohio State and Oklahoma State",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/college-football/news/penn-state-hires-jim-knowles-from-ohio-state-making-him-college-footballs-highest-paid-defensive-coordinator/",
+      "published_at": "2025-01-26T19:19:58Z",
+      "sentiment": {
+        "score": 0.12,
+        "subjectivity": 0.4,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.42
+      }
+    }
+  ]
+}

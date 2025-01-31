@@ -1,0 +1,271 @@
+{
+  "timestamp": "2025-01-29T21:04:05.813486",
+  "data": [
+    {
+      "title": "Leicester stun Tottenham with comeback win to increase pressure on Ange Postecoglou",
+      "description": "Ruud van Nistelrooy’s side end losing run as Tottenham crowd voice their disapproval at Daniel Levy and Postecoglou",
+      "source": "The Irish Times",
+      "url": "https://www.irishtimes.com/sport/soccer/2025/01/26/leicester-stun-tottenham-with-comeback-win-to-increase-pressure-on-ange-postecoglou/",
+      "published_at": "2025-01-26T16:40:37Z",
+      "sentiment": {
+        "score": 0.6799999999999999,
+        "subjectivity": 0.4,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.48
+      }
+    },
+    {
+      "title": "With Spurs 'as low as we've been', Ange admits his job is on the line",
+      "description": "With injury-hit Tottenham Hotspur suffering yet another loss, embattled manager Ange Postecoglou concedes he may not be around long enough to lead a revival.",
+      "source": "ABC News (AU)",
+      "url": "https://www.abc.net.au/news/2025-01-27/ange-postecoglou-spurs-sacked-loss/104862608",
+      "published_at": "2025-01-26T20:42:35Z",
+      "sentiment": {
+        "score": -0.27666666666666667,
+        "subjectivity": 0.39999999999999997,
+        "positive_words": 0,
+        "negative_words": 2,
+        "confidence": 0.54
+      }
+    },
+    {
+      "title": "Veteran Vardy leading by example, says Leicester boss Van Nistelrooy",
+      "description": "LONDON : Leicester City's veteran striker Jamie Vardy earned high praise from manager Ruud van Nistelrooy after his goal paved the way for a crucial 2-1 victory at Tottenham Hotspur on Sunday.The 38-year-old Vardy equalised just after halftime from close rang…",
+      "source": "CNA",
+      "url": "https://www.channelnewsasia.com/sport/veteran-vardy-leading-example-says-leicester-boss-van-nistelrooy-4897831",
+      "published_at": "2025-01-26T18:04:17Z",
+      "sentiment": {
+        "score": 0.224,
+        "subjectivity": 0.385,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.4905
+      }
+    },
+    {
+      "title": "Postecoglou Under Fire As Leicester Stun Hotspur, Man United Win At Fulham",
+      "description": "Leicester pushed Tottenham boss Ange Postecoglou closer to the exit door with a 2-1 win that extended Spurs' dismal run",
+      "source": "NDTV News",
+      "url": "https://sports.ndtv.com/english-premier-league/ange-postecoglou-under-fire-as-leicester-stun-hotspur-manchester-united-win-at-fulham-7567505",
+      "published_at": "2025-01-27T02:51:10Z",
+      "sentiment": {
+        "score": 0.6799999999999999,
+        "subjectivity": 0.4,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.48
+      }
+    },
+    {
+      "title": "Spurs booed off as Leicester comeback piles pressure on Postecoglou",
+      "description": "Spurs slumped to a fourth straight Premier League loss as strugglers Leicester fought back from a goal down to claim their first win in nine games at a mutinous Tottenham Hotspur Stadium.",
+      "source": "Sky Sports",
+      "url": "https://www.skysports.com/football/news/11661/13295195/tottenham-1-2-leicester-jamie-vardy-and-bilal-el-khannouss-pile-more-misery-on-spurs-and-ange-postecoglou",
+      "published_at": "2025-01-26T16:00:00Z",
+      "sentiment": {
+        "score": 0.10944444444444446,
+        "subjectivity": 0.23703703703703702,
+        "positive_words": 1,
+        "negative_words": 1,
+        "confidence": 0.654074074074074
+      }
+    },
+    {
+      "title": "Who’s to blame for Spurs’ struggles? Levy in firing line",
+      "description": "The first chants of \"we want Levy out\" were audible long before the implosion which condemned Spurs to their latest defeat. The home fans were airing their dissatisfaction early in the first half. What happened later just increased the volume.",
+      "source": "Sky Sports",
+      "url": "https://www.skysports.com/football/news/11095/13297330/tottenham-in-crisis-ange-postecoglou-under-pressure-but-chairman-daniel-levy-is-in-the-firing-line-after-leicester-loss",
+      "published_at": "2025-01-26T17:34:00Z",
+      "sentiment": {
+        "score": -0.12428571428571432,
+        "subjectivity": 0.3476190476190476,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.5166666666666666
+      }
+    },
+    {
+      "title": "Under-pressure Ange: A fair chunk will think I should be sacked",
+      "description": "Ange Postecoglou admits a \"a fair chunk\" of people will think he should be sacked as Tottenham boss but believes his players are giving him everything.",
+      "source": "Sky Sports",
+      "url": "https://www.skysports.com/football/news/11675/13297288/ange-postecoglou-under-pressure-spurs-boss-believes-a-fair-chunk-will-say-he-should-be-sacked-after-leicester-loss",
+      "published_at": "2025-01-26T17:24:00Z",
+      "sentiment": {
+        "score": 0.42,
+        "subjectivity": 0.9,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.06999999999999998
+      }
+    },
+    {
+      "title": "Sources: Spurs to stick with Ange amid sack calls",
+      "description": "Ange Postecoglou is expected to be given the chance to save his job amid mounting calls for Tottenham to sack the 59-year-old, sources have told ESPN.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/soccer/story/_/id/43583401/tottenham-stick-ange-postecoglou-amid-sacking-calls-sources",
+      "published_at": "2025-01-27T13:15:42Z",
+      "sentiment": {
+        "score": -0.06,
+        "subjectivity": 0.4,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.42
+      }
+    },
+    {
+      "title": "Business as usual at Spurs for Postecoglou ahead of Europa League match",
+      "description": "Ange Postecoglou is set to remain in charge at Tottenham Hotspur despite the club's poor run of form.",
+      "source": "Sky Sports",
+      "url": "https://www.skysports.com/football/news/11095/13297814/ange-postecoglou-business-as-usual-for-tottenham-hotspur-boss-ahead-of-europa-league-match",
+      "published_at": "2025-01-27T14:32:00Z",
+      "sentiment": {
+        "score": -0.395,
+        "subjectivity": 0.425,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.46249999999999997
+      }
+    },
+    {
+      "title": "Ange on sack fears after Spurs loss: 'Who knows?'",
+      "description": "Tottenham Hotspur head coach Ange Postecoglou has admitted that his job is not safe after the team succumbed to a 13th Premier League defeat of the season against Leicester City on Sunday.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/soccer/story/_/id/43572210/ange-postecoglou-tottenham-job-safety-knows",
+      "published_at": "2025-01-26T17:34:07Z",
+      "sentiment": {
+        "score": -0.3416666666666667,
+        "subjectivity": 0.25,
+        "positive_words": 0,
+        "negative_words": 2,
+        "confidence": 0.6449999999999999
+      }
+    },
+    {
+      "title": "Postecoglou Under Fire As Leicester Stun Troubled Spurs",
+      "description": "Leicester pushed Tottenham boss Ange Postecoglou closer to the sack with a 2-1 win that extended the north London side's dismal run and lifted the Foxes out of the Premier League relegation zone on Sunday.",
+      "source": "International Business Times",
+      "url": "https://www.ibtimes.com/postecoglou-under-fire-leicester-stun-troubled-spurs-3761023",
+      "published_at": "2025-01-26T16:27:07Z",
+      "sentiment": {
+        "score": 0.29000000000000004,
+        "subjectivity": 0.7,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.27
+      }
+    },
+    {
+      "title": "Former Leicester City Premier League champion reacts to Jamie Vardy’s spicy celebration against Spurs",
+      "description": "After his cheeky celebration against Tottenham Hotspur, Jamie Vardy sparked a reaction from a former Leicester City Premier League winner.\n One of the standout games in Matchday 23 of the 2024-25 Premier League season was Leicester City‘s dramatic 2-1 victory…",
+      "source": "Worldsoccertalk.com",
+      "url": "https://worldsoccertalk.com/news/former-leicester-city-premier-league-champion-reacts-to-jamie-vardys-spicy-celebration-against-spurs/",
+      "published_at": "2025-01-27T16:09:57Z",
+      "sentiment": {
+        "score": 0.11333333333333336,
+        "subjectivity": 0.19999999999999998,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.6199999999999999
+      }
+    },
+    {
+      "title": "EPL: Postecoglou under fire as Leicester stun Spurs in 2-1 win",
+      "description": "Leicester pushed Tottenham boss Ange Postecoglou closer to the sack with a 2-1 win that extended the north London side’s dismal run and lifted the Foxes out of the Premier League relegation zone on Sunday. Postecoglou’s troubled team blew the lead on home tur…",
+      "source": "The Punch",
+      "url": "https://punchng.com/epl-postecoglou-under-fire-as-leicester-stun-spurs-in-2-1-win/",
+      "published_at": "2025-01-26T17:56:16Z",
+      "sentiment": {
+        "score": 0.42000000000000004,
+        "subjectivity": 0.6,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.33999999999999997
+      }
+    },
+    {
+      "title": "Leicester end losing streak, Tottenham slump deepens",
+      "description": "Leicester City snapped a seven-match losing streak in the Premier League with a 2-1 victory at Tottenham Hotspur",
+      "source": "Rediff.com",
+      "url": "https://www.rediff.com/sports/report/epl-leicester-end-losing-streak-tottenham-slump-deepens/20250126.htm",
+      "published_at": "2025-01-26T16:25:23Z",
+      "sentiment": {
+        "score": 0.2,
+        "subjectivity": 0.0,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.76
+      }
+    },
+    {
+      "title": "'It's a striker's dream!' | O'Hara's hilarious reaction to Richarlison opener",
+      "description": "Sky Sports' Jamie O'Hara is taken by surprise as Richarlison nets the opener in Tottenham Hotspur's Premier League match against Leicester City.",
+      "source": "Sky Sports",
+      "url": "https://www.skysports.com/football/video/30998/13297125/tottenham-v-leicester-jamie-oharas-hilarious-reaction-to-richarlison-opener",
+      "published_at": "2025-01-26T14:41:00Z",
+      "sentiment": {
+        "score": 0.3,
+        "subjectivity": 1.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.0
+      }
+    },
+    {
+      "title": "Tottenham 1-2 Leicester City: Frustration boils with another one goal defeat",
+      "description": "Spurs stumble in second half again",
+      "source": "SB Nation",
+      "url": "https://cartilagefreecaptain.sbnation.com/2025/1/26/24352242/tottenham-1-2-leicester-city-frustration-boils-with-another-one-goal-defeat",
+      "published_at": "2025-01-26T16:17:05Z",
+      "sentiment": {
+        "score": -0.24333333333333335,
+        "subjectivity": 0.08888888888888889,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.6977777777777778
+      }
+    },
+    {
+      "title": "Pressure piles on Ange as Spurs lose to Leicester",
+      "description": "Leicester City snapped a seven-match losing streak in the Premier League with a 2-1 victory at Tottenham that continued the home side's abysmal form.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/soccer/report/_/gameId/704500",
+      "published_at": "2025-01-26T16:15:33Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 1,
+        "negative_words": 1,
+        "confidence": 0.82
+      }
+    },
+    {
+      "title": "Leicester stun Tottenham with comeback victory",
+      "description": "The anger inside Tottenham Hotspur Stadium was palpable before Leicester’s comeback. Thursday’s 3-2 win against Hoffenheim in the Europa League had done little to alleviate the pressure on chairman Daniel Levy. Tottenham Hotspur suffered a fourth consecutive …",
+      "source": "Thechronicle.com.gh",
+      "url": "https://thechronicle.com.gh/leicester-stun-tottenham-with-comeback-victory/",
+      "published_at": "2025-01-27T08:20:04Z",
+      "sentiment": {
+        "score": 0.25616666666666665,
+        "subjectivity": 0.32,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.5959999999999999
+      }
+    },
+    {
+      "title": "Defeat to Leicester piles more pressure on Tottenham boss Ange Postecoglou",
+      "description": "Two goals in four second-half minutes helped Leicester earn a first Premier League win since December 3 with a 2-1 victory at Tottenham to pile more pressure on Ange Postecoglou.",
+      "source": "Independent.ie",
+      "url": "https://www.independent.ie/sport/soccer/premier-league/defeat-to-leicester-piles-more-pressure-on-tottenham-boss-ange-postecoglou/a139168073.html",
+      "published_at": "2025-01-26T16:42:19Z",
+      "sentiment": {
+        "score": 0.4075,
+        "subjectivity": 0.43333333333333335,
+        "positive_words": 2,
+        "negative_words": 1,
+        "confidence": 0.5766666666666667
+      }
+    }
+  ]
+}

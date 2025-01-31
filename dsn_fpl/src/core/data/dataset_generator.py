@@ -5,16 +5,26 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 from .collector import FPLDataCollector, EnvironmentalData, NewsSource
+from .weather_collector import WeatherCollector
+from .media_collector import MediaCollector
+from .venue_collector import VenueCollector
+from .config import Config
+import asyncio
 
 class DSNDatasetGenerator:
     def __init__(self, data_path: Path = None):
         if data_path is None:
-            data_path = Path(__file__).parent.parent.parent.parent / "data"
+            data_path = Path(__file__).parent.parent.parent.parent.parent / "data"
         self.data_path = Path(data_path)
         print(f"Initializing DSNDatasetGenerator with data path: {self.data_path}")
         if not self.data_path.exists():
             raise ValueError(f"Data path does not exist: {self.data_path}")
+        
+        # 初始化数据收集器
         self.collector = FPLDataCollector()
+        self.weather_collector = WeatherCollector(api_key=Config().weather_api_key)
+        self.media_collector = MediaCollector(news_api_key=Config().news_api_key)
+        self.venue_collector = VenueCollector()
         self.current_season = "2023-24"
         
     def load_historical_data(self) -> Dict:
@@ -185,44 +195,98 @@ class DSNDatasetGenerator:
         
         # 2. 获取环境数据
         env_data = []
+        weather_data = {}
+        media_data = {}
+        venue_data = {}
+        
+        # 创建所有任务
+        tasks = []
         for _, player in players_sample.iterrows():
-            # 检查状态
-            status = player.get('status', 'a')
-            if status != 'a':
-                env_data.append(
-                    EnvironmentalData(
-                        source=NewsSource.INJURY,
-                        timestamp=datetime.now(),
-                        description=f"Player {player.get('name', 'Unknown')} is not available",
-                        severity=1.0,
-                        confidence=1.0,
-                        event_type='injury',
-                        related_players=[player['id']]
-                    )
-                )
+            player_id = str(player.get('id', '0'))
+            player_name = str(player.get('name', 'Unknown'))
+            team = str(player.get('team', 'Unknown'))
+            season = str(player.get('season', ''))
             
-            # 检查表现
-            form = float(player.get('form', 0)) if pd.notnull(player.get('form')) else 0
-            if form > 8.0:
-                env_data.append(
-                    EnvironmentalData(
-                        source=NewsSource.NEWS,
-                        timestamp=datetime.now(),
-                        description=f"Player {player.get('name', 'Unknown')} in excellent form",
-                        severity=0.8,
-                        confidence=0.9,
-                        event_type='form',
-                        related_players=[player['id']]
+            # 只对当前赛季的数据进行实时API请求
+            is_current_season = (season == self.current_season)
+            
+            # 获取场地数据
+            venue_info = self.venue_collector.get_venue_data(team)
+            if venue_info:
+                venue_data[player_id] = venue_info
+                venue_impact = self.venue_collector.calculate_venue_impact(team)
+                if venue_impact['impact_score'] > 0:
+                    env_data.append(
+                        EnvironmentalData(
+                            source=NewsSource.VENUE,
+                            timestamp=datetime.now(),
+                            description=f"Venue impact at {venue_info['name']}",
+                            severity=venue_impact['impact_score'],
+                            confidence=0.9,
+                            event_type='venue',
+                            venue_data=venue_info
+                        )
+                    )
+            
+            # 获取天气数据（只对当前赛季实时获取）
+            if is_current_season and team in self.weather_collector.STADIUM_LOCATIONS:
+                weather_info = self.weather_collector.get_weather_data(team)
+                if weather_info:
+                    weather_data[player_id] = weather_info
+                    env_data.append(
+                        EnvironmentalData(
+                            source=NewsSource.WEATHER,
+                            timestamp=datetime.now(),
+                            description=f"Weather at {team}'s stadium",
+                            severity=self._compute_weather_severity(weather_info),
+                            confidence=0.9,
+                            event_type=self._determine_weather_type(weather_info),
+                            weather_details=weather_info
+                        )
+                    )
+            else:
+                # 对历史数据使用平均天气数据
+                weather_data[player_id] = self._get_historical_weather(team, season)
+            
+            # 获取媒体数据（只对当前赛季实时获取）
+            if is_current_season:
+                task = asyncio.create_task(
+                    self.media_collector.get_media_data(
+                        player_name, 
+                        team, 
+                        days_back=3,
+                        use_cache_only=not is_current_season  # 历史数据只使用缓存
                     )
                 )
+                tasks.append((player_id, task))
+            else:
+                # 对历史数据使用静态情感得分
+                media_data[player_id] = self._get_historical_media_sentiment(player_name, team, season)
+        
+        # 等待所有媒体数据任务完成
+        if tasks:  # 只有当前赛季才有异步任务
+            for player_id, task in tasks:
+                try:
+                    articles = await task
+                    if articles:
+                        media_data[player_id] = articles
+                        media_impact = await self.media_collector.create_media_impact(
+                            player_name=players_sample[players_sample['id'] == int(player_id)]['name'].iloc[0],
+                            team=players_sample[players_sample['id'] == int(player_id)]['team'].iloc[0]
+                        )
+                        if media_impact:
+                            env_data.append(media_impact)
+                except Exception as e:
+                    print(f"获取媒体数据时出错: {str(e)}")
+                    continue
         
         # 3. 构建训练批次
         batch = {
-            'player_ids': players_sample['id'].tolist(),
-            'player_names': dict(zip(players_sample['id'], players_sample['name'])),
-            'positions': dict(zip(players_sample['id'], players_sample['position'])),
+            'player_ids': [str(pid) for pid in players_sample['id'].tolist()],
+            'player_names': {str(pid): name for pid, name in zip(players_sample['id'], players_sample['name'])},
+            'positions': {str(pid): pos for pid, pos in zip(players_sample['id'], players_sample['position'])},
             'stats': {
-                int(player['id']): {  # 确保id是整数
+                str(player['id']): {
                     'form': float(player.get('form', 0)) if pd.notnull(player.get('form')) else 0,
                     'fitness': float(player.get('minutes', 0)) / 90,
                     'momentum': float(player.get('points_per_game', 0)) if pd.notnull(player.get('points_per_game')) else 0,
@@ -231,9 +295,67 @@ class DSNDatasetGenerator:
                 for _, player in players_sample.iterrows()
             },
             'env_data': env_data,
+            'weather_data': weather_data,
+            'media_data': media_data,
+            'venue_data': venue_data,
             'formation': '4-4-2',  # 默认阵型
-            'captain_id': int(players_sample['id'].iloc[0]),  # 确保id是整数
+            'captain_id': str(players_sample['id'].iloc[0]),
             'target_points': players_sample['total_points'].tolist()
         }
         
         return batch
+        
+    def _compute_weather_severity(self, weather_data: Dict) -> float:
+        """计算天气严重程度"""
+        severity = 0.0
+        
+        # 温度影响
+        temp = weather_data['temperature']
+        if temp < 5 or temp > 30:
+            severity += 0.4
+        elif temp < 10 or temp > 25:
+            severity += 0.2
+            
+        # 降水影响
+        severity += weather_data['precipitation'] * 0.3
+        
+        # 风速影响
+        severity += weather_data['wind_speed'] * 0.3
+        
+        return min(1.0, severity)
+        
+    def _determine_weather_type(self, weather_data: Dict) -> str:
+        """确定天气类型"""
+        if weather_data['precipitation'] > 0.5:
+            return 'Heavy_Rain'
+        elif weather_data['precipitation'] > 0:
+            return 'Light_Rain'
+        elif weather_data['wind_speed'] > 0.5:
+            return 'Windy'
+        elif weather_data['temperature'] < 5:
+            return 'Cold'
+        elif weather_data['temperature'] > 30:
+            return 'Hot'
+        return 'Moderate'
+        
+    def _get_historical_weather(self, team: str, season: str) -> Dict:
+        """获取历史天气数据（使用平均值）"""
+        return {
+            'temperature': 15.0,  # 平均温度
+            'precipitation': 0.0,  # 无降水
+            'wind_speed': 2.0,    # 平均风速
+            'humidity': 70,       # 平均湿度
+            'condition': 'Normal' # 正常天气
+        }
+        
+    def _get_historical_media_sentiment(self, player_name: str, team: str, season: str) -> List[Dict]:
+        """获取历史媒体情感数据（使用静态数据）"""
+        return [{
+            'title': f'Historical data for {player_name}',
+            'description': f'Static sentiment data for {player_name} in {season}',
+            'source': 'Historical Database',
+            'sentiment': {
+                'score': 0.0,      # 中性情感
+                'confidence': 0.8,  # 较高置信度
+            }
+        }]

@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-01-29T21:04:03.114332",
+  "data": [
+    {
+      "title": "Hatching of whipworm eggs induced by bacterial contact is serine-protease dependent",
+      "description": "Author summary Human whipworms are parasites that cause the gastrointestinal disease trichuriasis in millions of people around the world. Infections occur when whipworm eggs, ingested in contaminated food and water, hatch in the intestine in response to gut b…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1012502",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.1,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.63
+      }
+    },
+    {
+      "title": "Why Manchester United Want To Sign Lecce Defender Patrick Dorgu",
+      "description": "As the transfer deadline approaches, Manchester United seem determined to sign Patrick Dorgu from Lecce. Why has he caught their eye?",
+      "source": "Forbes",
+      "url": "https://www.forbes.com/sites/adamdigby/2025/01/27/why-manchester-united-want-to-sign-lecce-defender-patrick-dorgu/",
+      "published_at": "2025-01-27T12:21:31Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    }
+  ]
+}

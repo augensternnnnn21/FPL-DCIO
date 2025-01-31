@@ -237,22 +237,71 @@ class ModelTester:
         return metrics
     
     def average_predictor(self, train_data, test_data):
-        """基准模型1：使用历史平均分"""
+        """使用训练集的平均得分作为预测值
+        
+        Args:
+            train_data: 训练数据
+            test_data: 测试数据
+            
+        Returns:
+            np.ndarray: 预测得分
+        """
+        # 计算训练集的平均得分
         mean_points = train_data['total_points'].mean()
-        return np.full(len(test_data), mean_points)
+        
+        # 获取测试集中所有球员的ID
+        player_ids = test_data['player_ids']
+        
+        # 为每个球员返回相同的平均得分
+        return np.full(len(player_ids), mean_points)
     
     def last_season_predictor(self, train_data, test_data):
-        """基准模型2：使用上赛季得分"""
-        last_season_points = train_data.groupby('name')['total_points'].last()
-        predictions = []
-        for player in test_data['name']:
-            predictions.append(last_season_points.get(player, last_season_points.mean()))
-        return np.array(predictions)
+        """使用上赛季的平均得分作为预测值
+        
+        Args:
+            train_data: 训练数据
+            test_data: 测试数据
+            
+        Returns:
+            np.ndarray: 预测得分
+        """
+        # 计算每个位置的平均得分
+        pos_means = train_data.groupby('position')['total_points'].mean()
+        
+        # 获取测试集中所有球员的ID
+        player_ids = test_data['player_ids']
+        
+        # 获取每个球员的位置
+        positions = [test_data['positions'][pid] for pid in player_ids]
+        
+        # 根据位置映射平均得分
+        predictions = np.array([pos_means.get(pos, pos_means.mean()) for pos in positions])
+        
+        return predictions
     
     def position_average_predictor(self, train_data, test_data):
-        """基准模型3：使用相同位置的平均分"""
+        """使用每个位置的平均得分作为预测值
+        
+        Args:
+            train_data: 训练数据
+            test_data: 测试数据
+            
+        Returns:
+            np.ndarray: 预测得分
+        """
+        # 计算每个位置的平均得分
         pos_means = train_data.groupby('position')['total_points'].mean()
-        return test_data['position'].map(pos_means).fillna(pos_means.mean())
+        
+        # 获取测试集中所有球员的ID
+        player_ids = test_data['player_ids']
+        
+        # 获取每个球员的位置
+        positions = [test_data['positions'][pid] for pid in player_ids]
+        
+        # 根据位置映射平均得分
+        predictions = np.array([pos_means.get(pos, pos_means.mean()) for pos in positions])
+        
+        return predictions
     
     def evaluate_model(self, train_seasons: List[str], test_season: str):
         """评估模型性能"""

@@ -1,0 +1,985 @@
+{
+  "timestamp": "2025-01-29T21:03:59.026624",
+  "data": [
+    {
+      "title": "Chiefs into SB in quest for third straight title",
+      "description": "The Chiefs, behind quarterback Patrick Mahomes, outlasted the Bills on Sunday night to reach the Super Bowl for the third consecutive season.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/nfl/story/_/id/43578615/chiefs-outlast-bills-advance-third-straight-super-bowl",
+      "published_at": "2025-01-27T03:26:34Z",
+      "sentiment": {
+        "score": 0.015999999999999997,
+        "subjectivity": 0.35333333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.45266666666666666
+      }
+    },
+    {
+      "title": "BFI Chair Jay Hunt Raises Concern Over “Very Protectionist Language Around Hollywood” Since Donald Trump Returned To White House",
+      "description": "BFI chair Jay Hunt has warned the British film and TV industry to avoid becoming “complacent” as she cites concerns over “very protectionist language around Hollywood” from the new Donald Trump administration. Delivering an impassioned plea for continued inve…",
+      "source": "Deadline",
+      "url": "http://deadline.com/2025/01/bfi-jay-hunt-hollywood-protectionism-cinema-crisis-box-office-1236270362/",
+      "published_at": "2025-01-28T11:25:02Z",
+      "sentiment": {
+        "score": -0.10136363636363638,
+        "subjectivity": 0.31742424242424244,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.5378030303030303
+      }
+    },
+    {
+      "title": "Shrouded Fable ETB UK Deal: I Want Every SIR and IR Please",
+      "description": "Working out at just over £4 per booster pack, this is the best time to find Shrouded Fable Chase Cards",
+      "source": "IGN",
+      "url": "https://www.ign.com/articles/shrouded-fable-etb-uk-deal-i-want-every-sir-and-ir-please",
+      "published_at": "2025-01-26T11:28:37Z",
+      "sentiment": {
+        "score": 0.6,
+        "subjectivity": 0.3,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.48999999999999994
+      }
+    },
+    {
+      "title": "Kansas City Chiefs set up NFL Super Bowl date with Philadelphia Eagles",
+      "description": "Taylor Swift celebrated with Travis Kelce as Kansas City beat Buffalo Bills 32-29 for a place in February 9 Super Bowl.",
+      "source": "Al Jazeera English",
+      "url": "https://www.aljazeera.com/sports/2025/1/27/kansas-city-chiefs-set-up-nfl-super-bowl-date-with-philadelphia-eagles",
+      "published_at": "2025-01-27T06:03:10Z",
+      "sentiment": {
+        "score": 0.2033333333333333,
+        "subjectivity": 0.6944444444444443,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.21388888888888896
+      }
+    },
+    {
+      "title": "Bucs' Evans in as Pro Bowl replacements named",
+      "description": "Buccaneers receiver Mike Evans will make his sixth appearance and Falcons running back Bijan Robinson will make his first, as both were among the players named Monday to the Pro Bowl Games after spots were vacated.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/nfl/story/_/id/43590300/bucs-evans-falcons-robinson-pro-bowl-replacements",
+      "published_at": "2025-01-28T01:43:40Z",
+      "sentiment": {
+        "score": 0.075,
+        "subjectivity": 0.16666666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5833333333333334
+      }
+    },
+    {
+      "title": "Gerard Butler’s ‘Den Of Thieves 2’ New On Digital Streaming This Week",
+      "description": "\"Den of Thieves 2: Pantera\"—Gerard Butler and O’Shea Jackson Jr.’s new action thriller—arrives on digital streaming this week. Find out when and where you can watch it at home.",
+      "source": "Forbes",
+      "url": "https://www.forbes.com/sites/timlammers/2025/01/27/gerard-butlers-den-of-thieves-2-new-on-digital-streaming-this-week/",
+      "published_at": "2025-01-28T02:00:30Z",
+      "sentiment": {
+        "score": 0.04472727272727272,
+        "subjectivity": 0.2018181818181818,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5587272727272727
+      }
+    },
+    {
+      "title": "Why Comet G3 (ATLAS) will be 'remembered as the Great Comet of 2025' (photos)",
+      "description": "\"There is little question that, with its daylight display and spectacular evening apparition in a moonless sky, Comet 2024 G3 will long be remembered as the Great Comet of 2025, the first of its kind seen since Comet McNaught.\"",
+      "source": "Space.com",
+      "url": "https://www.space.com/the-universe/comets/why-comet-g3-atlas-will-be-remembered-as-the-great-comet-of-2025-photos",
+      "published_at": "2025-01-27T13:00:00Z",
+      "sentiment": {
+        "score": 0.44107142857142856,
+        "subjectivity": 0.6476190476190476,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.30666666666666664
+      }
+    },
+    {
+      "title": "Chiefs advance to Super Bowl LIX with a 32-29 win over Bills with a chance for a three-peat",
+      "description": "Patrick Mahomes threw a touchdown and ran for two touchdowns to lead the Chiefs to another AFC Championship Game win.",
+      "source": "NBCSports.com",
+      "url": "https://www.nbcsports.com/nfl/profootballtalk/rumor-mill/news/chiefs-advance-to-super-bowl-lix-with-a-32-29-win-over-bills-with-a-chance-for-a-three-peat",
+      "published_at": "2025-01-27T02:58:43Z",
+      "sentiment": {
+        "score": 0.43,
+        "subjectivity": 0.4666666666666667,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.4333333333333333
+      }
+    },
+    {
+      "title": "15 most anticipated games of 2025 that you need to add to your wishlist",
+      "description": "These are the most anticipated games of 2025 so you better add them to your wishlist before you miss out",
+      "source": "XDA Developers",
+      "url": "https://www.xda-developers.com/most-anticipated-games-2025-you-need-add-your-wishlist/",
+      "published_at": "2025-01-28T01:00:11Z",
+      "sentiment": {
+        "score": 0.09999999999999998,
+        "subjectivity": 0.5,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.41
+      }
+    },
+    {
+      "title": "Is it time to switch VPN providers? 5 reasons to consider a change",
+      "description": "Maybe you just subscribed to a new VPN service and are already regretting it. Or maybe you’re a long-time subscriber and your old provider just isn’t cutting it any longer. Perhaps your current VPN is in hot water for selling user data or a competitor has bet…",
+      "source": "PCWorld",
+      "url": "https://www.pcworld.com/article/2580060/is-it-time-to-switch-vpn-providers-5-reasons-to-consider-a-change.html",
+      "published_at": "2025-01-27T14:19:18Z",
+      "sentiment": {
+        "score": -0.013636363636363636,
+        "subjectivity": 0.5609090909090909,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.30736363636363634
+      }
+    },
+    {
+      "title": "Chiefs owner Clark Hunt crushed by fans for ‘robot’ AFC Championship speech",
+      "description": "Football fans poked fun at the robotic way Chiefs owner Clark Hunt delivered his victory speech on Sunday after Kansas City defeated the Bills in the AFC championship game.",
+      "source": "New York Post",
+      "url": "https://nypost.com/2025/01/27/sports/chiefs-owner-clark-hunt-crushed-by-fans-for-robot-speech/",
+      "published_at": "2025-01-27T05:03:35Z",
+      "sentiment": {
+        "score": 0.155,
+        "subjectivity": 0.225,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.6025
+      }
+    },
+    {
+      "title": "Super Bowl Leaders (Part 1): Laying A Foundation For Success",
+      "description": "With Super Bowl LIX around the corner, this three-part article series will highlight some of the most celebrated leaders and pivotal moments that helped shape the event.",
+      "source": "Forbes",
+      "url": "https://www.forbes.com/sites/marklasota/2025/01/27/super-bowl-leaders-part-1-laying-a-foundation-for-success/",
+      "published_at": "2025-01-27T06:28:42Z",
+      "sentiment": {
+        "score": 0.43166666666666664,
+        "subjectivity": 0.5638888888888888,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.3652777777777778
+      }
+    },
+    {
+      "title": "Who is playing in 2025 Super Bowl: Patrick Mahomes, Saquon Barkley headline rosters for Chiefs and Eagles",
+      "description": "Here's a look at who will be playing in Super Bowl LIX",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/who-is-playing-in-2025-super-bowl-patrick-mahomes-saquon-barkley-headline-rosters-for-chiefs-and-eagles/",
+      "published_at": "2025-01-27T18:08:28Z",
+      "sentiment": {
+        "score": 0.19999999999999998,
+        "subjectivity": 0.6666666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.23333333333333334
+      }
+    },
+    {
+      "title": "Chiefs to advance to 3rd straight Super Bowl and take on Eagles",
+      "description": "Patrick Mahomes threw for 245 yards and a touchdown, ran through the Buffalo defense for two more scores, and relied on his defense at key moments to help the Kansas City Chiefs beat the Bills 32-29 on Sunday night and reach the Super Bowl for the third conse…",
+      "source": "Japan Today",
+      "url": "https://japantoday.com/category/sports/eagles-reach-fifth-super-bowl-and-second-in-3-seasons-will-face-bills-or-chiefs",
+      "published_at": "2025-01-27T03:14:05Z",
+      "sentiment": {
+        "score": 0.11714285714285712,
+        "subjectivity": 0.4619047619047619,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3766666666666667
+      }
+    },
+    {
+      "title": "2025 AFC Championship Game odds, spread, line: Bills vs. Chiefs picks, predictions by expert on 47-30 roll",
+      "description": "SportsLine's Mike Tierney just revealed his Kansas City vs. Buffalo expert picks for Sunday's AFC Championship Game matchup during the 2025 NFL playoffs",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/2025-afc-championship-game-odds-spread-line-bills-vs-chiefs-picks-predictions-by-expert-on-47-30-roll/",
+      "published_at": "2025-01-26T15:21:18Z",
+      "sentiment": {
+        "score": -0.24,
+        "subjectivity": 0.4,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.42
+      }
+    },
+    {
+      "title": "Bills vs. Chiefs how to watch, live stream, picks, odds, time: Model shares 2025 AFC Championship predictions",
+      "description": "Where to watch and live stream Kansas City vs. Buffalo in the AFC Championship Game 2025 on Sunday at 6:30 p.m. ET",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/bills-vs-chiefs-how-to-watch-live-stream-picks-odds-time-model-shares-2025-afc-championship-predictions/",
+      "published_at": "2025-01-26T02:15:00Z",
+      "sentiment": {
+        "score": -0.025454545454545462,
+        "subjectivity": 0.4666666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3733333333333334
+      }
+    },
+    {
+      "title": "Bills vs. Chiefs how to watch, live stream, picks, odds, time: Model gives 2025 AFC Championship predictions",
+      "description": "Where to watch and live stream Kansas City vs. Buffalo in the AFC Championship Game 2025 on Sunday at 6:30 p.m. ET",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/bills-vs-chiefs-how-to-watch-live-stream-picks-odds-time-model-gives-2025-afc-championship-predictions/",
+      "published_at": "2025-01-26T16:05:59Z",
+      "sentiment": {
+        "score": -0.025454545454545462,
+        "subjectivity": 0.4666666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3733333333333334
+      }
+    },
+    {
+      "title": "Chiefs-Eagles Super Bowl set after more heartbreak for Bills; Commanders have brutal day",
+      "description": "Patrick Mahomes outduels Josh Allen; Jalen Hurts and Saquon Barkley run all over Washington",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/chiefs-eagles-super-bowl-set-after-more-heartbreak-for-bills-commanders-have-brutal-day/",
+      "published_at": "2025-01-27T13:46:57Z",
+      "sentiment": {
+        "score": -0.008333333333333349,
+        "subjectivity": 0.7222222222222222,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.19444444444444445
+      }
+    },
+    {
+      "title": "Chiefs Beat Bills, Seek Super Bowl 'Three-peat' Against Eagles",
+      "description": "The Kansas City Chiefs kept their bid for an historic third straight Super Bowl alive Sunday, holding off the Buffalo Bills 32-29 in an AFC Championship thriller to set up an NFL title clash with the Philadelphia Eagles.",
+      "source": "International Business Times",
+      "url": "https://www.ibtimes.com/chiefs-beat-bills-seek-super-bowl-three-peat-against-eagles-3761072",
+      "published_at": "2025-01-27T04:27:23Z",
+      "sentiment": {
+        "score": 0.09666666666666666,
+        "subjectivity": 0.35555555555555557,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.451111111111111
+      }
+    },
+    {
+      "title": "Help! I’ve Tried Everything to Find a Woman Who Will Date Me. It’s Impossible for a Guy Like Me.",
+      "description": "What do they even want?",
+      "source": "Slate Magazine",
+      "url": "https://slate.com/advice/2025/01/dating-advice-finding-a-woman-dear-prudence.html",
+      "published_at": "2025-01-28T11:00:00Z",
+      "sentiment": {
+        "score": -0.39999999999999997,
+        "subjectivity": 1.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.0
+      }
+    },
+    {
+      "title": "10 Classic Horror TV Shows That Were Legitimately Creepy",
+      "description": "Many classic horror TV shows from the 1930s to the 1980s were anthology series that produced chilling short stories and were truly creepy.",
+      "source": "Screen Rant",
+      "url": "https://screenrant.com/classic-horror-tv-shows-legitimately-creepy-list/",
+      "published_at": "2025-01-27T03:00:29Z",
+      "sentiment": {
+        "score": -0.05714285714285715,
+        "subjectivity": 0.5761904761904761,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.2966666666666667
+      }
+    },
+    {
+      "title": "Chiefs continue to be unbeatable in close games as they chase a Super Bowl three-peat",
+      "description": "The Chiefs are headed back to the Super Bowl, trying to become the first team in NFL history to win it three consecutive times, and one of the biggest reasons why is that they have something John Wayne and Jeff Bridges have had over the years. True grit. No m…",
+      "source": "Japan Today",
+      "url": "https://japantoday.com/category/sports/true-grit-chiefs-continue-to-be-unbeatable-in-close-games-as-they-chase-a-super-bowl-three-peat",
+      "published_at": "2025-01-27T21:51:33Z",
+      "sentiment": {
+        "score": 0.40666666666666673,
+        "subjectivity": 0.4527777777777777,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.4430555555555556
+      }
+    },
+    {
+      "title": "Taylor Swift jumps for joy as Travis Kelce embraces her in stadium tunnel after AFC Championship win",
+      "description": "The \"Blank Space\" singer and the tight end did not shy away from PDA after the Chiefs pulled off a narrow 32-29 victory against the Bills on Sunday.",
+      "source": "Page Six",
+      "url": "https://pagesix.com/2025/01/27/entertainment/taylor-swift-jumps-for-joy-with-travis-kelce-in-tunnel-after-win/",
+      "published_at": "2025-01-27T14:20:52Z",
+      "sentiment": {
+        "score": 0.41380952380952385,
+        "subjectivity": 0.2976190476190476,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.6116666666666666
+      }
+    },
+    {
+      "title": "What Red Lobster's New CEO Teaches Us About Customer Experience Strategy",
+      "description": "Three ways your brand can take a page out of Damola and Red Lobsters approach to increase transparency, communication and loyalty.\nContinue reading...",
+      "source": "CMSWire",
+      "url": "https://www.cmswire.com/customer-experience/what-red-lobsters-new-ceo-teaches-us-about-customer-experience-strategy/",
+      "published_at": "2025-01-27T16:56:14Z",
+      "sentiment": {
+        "score": 0.027272727272727268,
+        "subjectivity": 0.15151515151515152,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5939393939393939
+      }
+    },
+    {
+      "title": "Boots and Hearts Unveils 2025 Lineup, with Daughtry, Default, Meghan Patrick, Lakeview",
+      "description": "Boots and Hearts is once again taking place at Burl's Creek Event Grounds in Oro-Medonte, ON, from August 7 to 10, and after previously",
+      "source": "Exclaim!",
+      "url": "https://exclaim.ca/music/article/boots-and-hearts-unveils-2025-lineup-with-daughtry-default-meghan-patrick-lakeview",
+      "published_at": "2025-01-28T13:00:00Z",
+      "sentiment": {
+        "score": -0.09999999999999999,
+        "subjectivity": 0.16666666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5833333333333334
+      }
+    },
+    {
+      "title": "Nine Favorite Things.",
+      "description": "Nine Favorite Things.\n(Valentine’s day with Asher) Hey everyone! I just looked at the calendar and this is already the very last Sunday of January. Wow, how can Saturday be February 1st! Spending the month home in Colorado has been perfect. We’ve had very typ…",
+      "source": "Halfbakedharvest.com",
+      "url": "https://www.halfbakedharvest.com/nine-favorite-things-374/",
+      "published_at": "2025-01-26T08:00:00Z",
+      "sentiment": {
+        "score": 0.24500000000000002,
+        "subjectivity": 0.7311111111111112,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.18822222222222218
+      }
+    },
+    {
+      "title": "10 Best Twist Villains In Movie History",
+      "description": "A good twist villain can enhance an already great movie to a new level, from shocking horror slashers to hilariously unexpected antagonists in comedy.",
+      "source": "Screen Rant",
+      "url": "https://screenrant.com/best-movie-twist-villains-list/",
+      "published_at": "2025-01-26T11:40:16Z",
+      "sentiment": {
+        "score": 0.4403030303030303,
+        "subjectivity": 0.6840909090909091,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.3411363636363636
+      }
+    },
+    {
+      "title": "How to watch 2024 Super Bowl 59: Chiefs vs. Eagles live stream info, game time, TV channel",
+      "description": "The NFL Playoffs finish and the Super Bowl champion will be crowned when the Philadelphia Eagles (14-3) and the Kansas City Chiefs (15-2) square off at Caesars Superdome on Feb. 9, starting at 6:30…",
+      "source": "USA Today",
+      "url": "https://ftw.usatoday.com/article/how-to-watch-2024-super-bowl-59-chiefs-vs-eagles-live-stream-info-game-time-tv-channel",
+      "published_at": "2025-01-27T12:01:00Z",
+      "sentiment": {
+        "score": 0.04836363636363636,
+        "subjectivity": 0.4666666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3733333333333334
+      }
+    },
+    {
+      "title": "Josh Allen, Bills Lose to Chiefs in AFC Title Game as NFL Fans Call Out Play-Calling",
+      "description": "The Super Bowl LIX matchup is set, and fans are gearing up for another showdown between the Philadelphia Eagles and Kansas City Chiefs after the Buffalo Bills…",
+      "source": "Bleacher Report",
+      "url": "https://bleacherreport.com/articles/10152384-josh-allen-bills-lose-to-chiefs-in-afc-title-game-as-nfl-fans-call-out-play-calling",
+      "published_at": "2025-01-27T03:12:53Z",
+      "sentiment": {
+        "score": -0.22000000000000003,
+        "subjectivity": 0.5333333333333333,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.38666666666666666
+      }
+    },
+    {
+      "title": "Kansas City Chiefs make the final in their bid for an unprecedented third straight Super Bowl",
+      "description": "Patrick Mahomes and co. are seeking an historic ‘three-peat’.",
+      "source": "The42",
+      "url": "https://www.the42.ie/chiefs-bills-6605940-Jan2025/",
+      "published_at": "2025-01-27T08:40:04Z",
+      "sentiment": {
+        "score": 0.11333333333333333,
+        "subjectivity": 0.4944444444444444,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.35388888888888886
+      }
+    },
+    {
+      "title": "Bills vs. Chiefs AFC Championship expert picks: NFL playoffs odds, best bets, where to watch, TV, live stream",
+      "description": "CBSSports.com and SportsLine break down the 2025 AFC title game",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/bills-vs-chiefs-afc-championship-expert-picks-nfl-playoffs-odds-best-bets-where-to-watch-tv-live-stream/",
+      "published_at": "2025-01-26T22:30:25Z",
+      "sentiment": {
+        "score": 0.0871212121212121,
+        "subjectivity": 0.37222222222222223,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4394444444444444
+      }
+    },
+    {
+      "title": "Chiefs vs. Bills odds, AFC Championship expert picks: NFL playoffs best bets, where to watch, TV, live stream",
+      "description": "CBSSports.com and SportsLine break down the 2025 AFC title game",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/chiefs-vs-bills-odds-afc-championship-expert-picks-nfl-playoffs-best-bets-where-to-watch-tv-live-stream/",
+      "published_at": "2025-01-26T04:00:28Z",
+      "sentiment": {
+        "score": 0.0871212121212121,
+        "subjectivity": 0.37222222222222223,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4394444444444444
+      }
+    },
+    {
+      "title": "The Chiefs Get More Mahomes Magic And Advance To 3rd Straight Super Bowl",
+      "description": "Patrick Mahomes accounted for three touchdowns and the Kansas City defense made big stops at key moments to help the Chiefs beat the Buffalo Bills.",
+      "source": "HuffPost",
+      "url": "https://www.huffpost.com/entry/kansas-city-chiefs-beat-bills-advance-super-bowl_n_6796f7f7e4b01edab1f913cc",
+      "published_at": "2025-01-27T03:08:24Z",
+      "sentiment": {
+        "score": 0.1314285714285714,
+        "subjectivity": 0.5238095238095238,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3333333333333333
+      }
+    },
+    {
+      "title": "Aljamain Sterling eyes April return against Arnold Allen or Brian Ortega: 'I'm still chasing that gold'",
+      "description": "The hunt for a second UFC title is still on for Aljamain Sterling, who is aiming to return to action in April against a big opponent.",
+      "source": "USA Today",
+      "url": "https://mmajunkie.usatoday.com/2025/01/ufc-aljamain-sterling-wants-arnold-allen-brian-ortega-next-fight-april",
+      "published_at": "2025-01-26T22:00:55Z",
+      "sentiment": {
+        "score": 0.22,
+        "subjectivity": 0.06666666666666667,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.7133333333333334
+      }
+    },
+    {
+      "title": "Chiefs vs. Bills AFC Championship expert picks: NFL playoffs odds, best bets, where to watch, TV, live stream",
+      "description": "CBSSports.com and SportsLine break down the 2025 AFC title game",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/chiefs-vs-bills-afc-championship-expert-picks-nfl-playoffs-odds-best-bets-where-to-watch-tv-live-stream/",
+      "published_at": "2025-01-26T15:16:49Z",
+      "sentiment": {
+        "score": 0.0871212121212121,
+        "subjectivity": 0.37222222222222223,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4394444444444444
+      }
+    },
+    {
+      "title": "Miranda Devine: Trump used his finite political capital to pardon the Jan. 6 riot defendants – and right the egregious wrongs of Biden’s DOJ",
+      "description": "It took chutzpah for Donald Trump to pardon the Jan. 6 Capitol Riot defendants and use up a big chunk of his finite political capital to do the right thing, against the advice of polite Washington.",
+      "source": "New York Post",
+      "url": "https://nypost.com/2025/01/26/opinion/trump-is-righting-the-biden-dojs-wrongs-with-pardons-for-jan-6-capitol-riot-defendants/",
+      "published_at": "2025-01-27T03:50:56Z",
+      "sentiment": {
+        "score": 0.06857142857142856,
+        "subjectivity": 0.2742857142857143,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.508
+      }
+    },
+    {
+      "title": "Democrats' only guiding principle is the quest for more power for the government over the people",
+      "description": "Democrats say they are now looking for guiding principles. Good luck with that. Nearly three months after the election, Democrats are on a scavenger hunt looking for their guiding principles. According to this report in Semafor: ‘Give us a little time’: Democ…",
+      "source": "Freerepublic.com",
+      "url": "https://freerepublic.com/focus/f-chat/4292740/posts",
+      "published_at": "2025-01-26T14:13:54Z",
+      "sentiment": {
+        "score": 0.3335,
+        "subjectivity": 0.6,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.33999999999999997
+      }
+    },
+    {
+      "title": "The best AFC Championship anytime TD scorer bets for Chiefs vs. Bills",
+      "description": "Five players scored when the Bills and Chiefs met in Week 11.",
+      "source": "USA Today",
+      "url": "https://ftw.usatoday.com/lists/bills-chiefs-anytime-touchdown-scorer-afc-champioship",
+      "published_at": "2025-01-26T13:00:00Z",
+      "sentiment": {
+        "score": 0.6,
+        "subjectivity": 0.3,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.48999999999999994
+      }
+    },
+    {
+      "title": "Hoops Preview: Penn State 2024-25",
+      "description": "Michigan Hockey Game #26: Michigan 4, Wisconsin 4 (Shootout Win)\n\n January 26th, 2025 at 12:09 AM\n\n David\nJanuary 26th, 2025 at 12:09 AM\n\n\n \n \n \n \n \n\n \r\n\n\n\n \n We Better Figure This...Out (Bill Rapai)\n \n CLICK HERE for Game Recap from Kristy McNeil and other p…",
+      "source": "mgoblog.com",
+      "url": "https://mgoblog.com/content/hoops-preview-penn-state-2024-25",
+      "published_at": "2025-01-27T17:00:02Z",
+      "sentiment": {
+        "score": 0.245,
+        "subjectivity": 0.41500000000000004,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.4695
+      }
+    },
+    {
+      "title": "2025 Super Bowl MVP odds: Saquon Barkley is understandably getting QB love from oddsmakers",
+      "description": "A running back hasn't won Super Bowl MVP since 1998.",
+      "source": "USA Today",
+      "url": "https://ftw.usatoday.com/2025/01/super-bowl-mvp-odds-chiefs-eagles-saquon-barkley-mahomes",
+      "published_at": "2025-01-27T17:24:25Z",
+      "sentiment": {
+        "score": 0.17499999999999996,
+        "subjectivity": 0.4833333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3616666666666667
+      }
+    },
+    {
+      "title": "Clark Hunt has no feelings? Fans ridicule Chiefs owner for robot talk",
+      "description": "Kansas City Chiefs owner Clark Hunt found himself at the center of online jokes after delivering a victory speech that some fans found overly rehearsed and \"robotic.\" \nTh",
+      "source": "Marca",
+      "url": "https://www.marca.com/en/nfl/kansas-city-chiefs/2025/01/27/6797646422601ddf658b4579.html",
+      "published_at": "2025-01-27T10:52:36Z",
+      "sentiment": {
+        "score": 0.14,
+        "subjectivity": 0.15000000000000002,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.655
+      }
+    },
+    {
+      "title": "Philadelphia Police Make Arrests, Issue 31 Citations Over Wild NFCCG Celebrations",
+      "description": "Philadelphia Eagles fans hardly behaved in the aftermath of the team's big NFC Championship Game victory ... police say they had to make multiple arrests and issue several citations amid the parties that followed the Birds' win over the Commanders.…\n Permalink",
+      "source": "TMZ",
+      "url": "https://www.tmz.com/2025/01/27/philadelphia-police-make-arrests-issue-31-citations-over-wild-nfccg-celebrations/",
+      "published_at": "2025-01-27T19:32:45Z",
+      "sentiment": {
+        "score": 0.2845238095238095,
+        "subjectivity": 0.2630952380952381,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.6358333333333334
+      }
+    },
+    {
+      "title": "Black Hat Europe 2024 NOC/SOC: Security Cloud",
+      "description": "Cisco is the Official Security Cloud Provider for the Black Hat Network Operations Center (NOC). We work with the other official partners to bring the hardware, software and engineers to build and secure the network, for our joint customer: Black Hat.  Arista…",
+      "source": "Cisco.com",
+      "url": "https://blogs.cisco.com/security/black-hat-europe-2024-noc-soc-security-cloud",
+      "published_at": "2025-01-28T13:00:00Z",
+      "sentiment": {
+        "score": -0.032499999999999994,
+        "subjectivity": 0.3958333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4229166666666667
+      }
+    },
+    {
+      "title": "‘Love Is Blind’ Season 8 Introduces Minneapolis Singles Seeking To Meet Their Match In The Pods",
+      "description": "Netflix just dropped the cast video and portraits of the singles starring in Season 8, which is set in Minneapolis.\nThe post ‘Love Is Blind’ Season 8 Introduces Minneapolis Singles Seeking To Meet Their Match In The Pods appeared first on Bossip.",
+      "source": "Bossip",
+      "url": "http://bossip.com/2769437/love-is-blind-season-8-cast/",
+      "published_at": "2025-01-27T22:22:53Z",
+      "sentiment": {
+        "score": 0.03,
+        "subjectivity": 0.5733333333333334,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.29866666666666664
+      }
+    },
+    {
+      "title": "Ten man Arsenal prove they’re still in the title race!",
+      "description": "Arsenal kept their title hopes alive on Saturday with a hard-fought victory away to Wolves. Riccardo Calafiori secured a narrow 1-0 win for the Gunners, slicing in a half-volley from inside the area after a lacklustre clearance from the home side. However, it…",
+      "source": "Just Arsenal News",
+      "url": "https://www.justarsenal.com/ten-man-arsenal-prove-theyre-still-in-the-title-race/385969",
+      "published_at": "2025-01-27T11:30:00Z",
+      "sentiment": {
+        "score": 0.3716666666666667,
+        "subjectivity": 0.30000000000000004,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.6099999999999999
+      }
+    },
+    {
+      "title": "The Chiefs get more Mahomes magic and advance to 3rd straight Super Bowl, beating the Bills 32-29",
+      "description": "The two-time defending Super Bowl champions had earned a chance at an unprecedented three-peat. And once again, they had brushed aside the Buffalo Bills on the way.",
+      "source": "The Denver Post",
+      "url": "https://www.denverpost.com/2025/01/26/the-chiefs-get-more-mahomes-magic-and-advance-to-3rd-straight-super-bowl-beating-the-bills-32-29/",
+      "published_at": "2025-01-27T03:04:43Z",
+      "sentiment": {
+        "score": 0.18499999999999997,
+        "subjectivity": 0.5291666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3295833333333334
+      }
+    },
+    {
+      "title": "Path to glory: Eagles and Chiefs set for epic Super Bowl LIX showdown",
+      "description": "The stage is set for Super Bowl LIX as the Kansas City Chiefs and the Philadelphia Eagles prepare to battle it out at the Caesars Superdome in New Orleans. The matchup marks a high",
+      "source": "Marca",
+      "url": "https://www.marca.com/en/nfl/kansas-city-chiefs/2025/01/28/6797f5f246163ff4818b4587.html",
+      "published_at": "2025-01-28T01:25:12Z",
+      "sentiment": {
+        "score": 0.12756363636363635,
+        "subjectivity": 0.5455757575757576,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.31809696969696966
+      }
+    },
+    {
+      "title": "Local Florida police officer nabs one of FBI's 10 most wanted fugitives",
+      "description": "Lady Lake Police Sgt. Michelle Bilbrey arrested Donald Eugene Fields II, a fugitive on the FBI's Ten Most Wanted list, during a routine traffic stop.",
+      "source": "Fox News",
+      "url": "https://www.foxnews.com/us/local-florida-police-officer-nabs-one-fbis-10-most-wanted-fugitives",
+      "published_at": "2025-01-28T12:20:44Z",
+      "sentiment": {
+        "score": 0.15,
+        "subjectivity": 0.25,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5249999999999999
+      }
+    },
+    {
+      "title": "Patrick Mahomes, Super Bowl-bound Kansas City Chiefs continue to break new ground",
+      "description": "Star Black quarterbacks no longer are the exception – they’re the rule. Throughout the football season, this series will explore the prominence and impact of Black QBs from the grassroots level to the NFL. KANSAS CITY, Mo. – Before delving into the Kansas Cit…",
+      "source": "Andscape.com",
+      "url": "https://andscape.com/features/patrick-mahomes-super-bowl-bound-kansas-city-chiefs-continue-to-break-new-ground/",
+      "published_at": "2025-01-27T15:32:58Z",
+      "sentiment": {
+        "score": 0.020454545454545447,
+        "subjectivity": 0.49696969696969695,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3521212121212121
+      }
+    },
+    {
+      "title": "Paris Scene: The Latest and Greatest Things to Do",
+      "description": "Paris has a spate of new stores, restaurants and exhibitions to check out during couture season.",
+      "source": "WWD",
+      "url": "http://wwd.com/eye/lifestyle/paris-scene-latest-greatest-things-to-do-1236875787/",
+      "published_at": "2025-01-27T06:00:00Z",
+      "sentiment": {
+        "score": 0.3272727272727272,
+        "subjectivity": 0.7848484848484848,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.15060606060606063
+      }
+    },
+    {
+      "title": "Business as usual at Spurs for Postecoglou ahead of Europa League match",
+      "description": "Ange Postecoglou is set to remain in charge at Tottenham Hotspur despite the club's poor run of form.",
+      "source": "Sky Sports",
+      "url": "https://www.skysports.com/football/news/11095/13297814/ange-postecoglou-business-as-usual-for-tottenham-hotspur-boss-ahead-of-europa-league-match",
+      "published_at": "2025-01-27T14:32:00Z",
+      "sentiment": {
+        "score": -0.395,
+        "subjectivity": 0.425,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.46249999999999997
+      }
+    },
+    {
+      "title": "UK Charts: Black Ops 6 Fends Off A Wave Of Nintendo Hits",
+      "description": "Mario's on my six!The UK presents a largely familiar picture in the physical charts this week, though there have been a couple of notable shake ups.Call of Duty: Black Ops 6 finds itself at the top of the pack, though a wave of Nintendo titles are snapping at…",
+      "source": "Nintendo Life",
+      "url": "https://www.nintendolife.com/news/2025/01/uk-charts-black-ops-6-fends-off-a-wave-of-nintendo-hits",
+      "published_at": "2025-01-27T09:45:00Z",
+      "sentiment": {
+        "score": 0.10416666666666667,
+        "subjectivity": 0.41825396825396827,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.40722222222222215
+      }
+    },
+    {
+      "title": "Crazy Time: Profitable And Entertaining Live Dealer Game",
+      "description": "Crazy Time Best Are Living Game Shows Evolution GamesContentPachinko Crazy TimeDoes Ridiculous Time Feature A Live Dealer? Crazy Time Game Rules Plus GameplayWhere In The Us May I Play Insane Time? Play Crazy Time At Mostbet CasinoThe Crazy Time WheelGames Si…",
+      "source": "Blog.br",
+      "url": "https://www.bandeiradois.blog.br/crazy-time-profitable-and-entertaining-live-dealer-game/",
+      "published_at": "2025-01-27T22:15:09Z",
+      "sentiment": {
+        "score": -0.1744242424242424,
+        "subjectivity": 0.7066666666666668,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.20533333333333326
+      }
+    },
+    {
+      "title": "The Chiefs get more Mahomes magic and advance to 3rd straight Super Bowl, beating the Bills 32-29 - NewsBreak",
+      "description": "KANSAS CITY, Mo. (AP) — Everything looked oh-so familiar at Arrowhead Stadium on Sunday night: Patrick Mahomes hoisting the AFC championship trophy as conf",
+      "source": "Newsbreak.com",
+      "url": "https://www.newsbreak.com/share/3778515773828-the-chiefs-get-more-mahomes-magic-and-advance-to-3rd-straight-super-bowl-beating-the-bills-32-29?s=a2&share_destination_id=MzAxNzI4MTg4LTE3Mzc5NTI3NzM3NjY%3D&pd=0KQ1HgvK&hl=en_US&send_time=1737952773&actBtn=bottomBar&_f=app_share&trans_data=%7B%22platform%22%3A1%2C%22cv%22%3A%2225.3.0%22%2C%22languages%22%3A%22en%22%7D&sep=ns_push_exp_rt_bucketv12-v8%2Cns_foryou_rank_exp_25q1-v2%2Cns_foryou_blend_exp_25q1-v8%2Cns_foryou_model_exp_25q1-v2%2Cns_foryou_recall_exp_25q1-v1",
+      "published_at": "2025-01-27T04:40:02Z",
+      "sentiment": {
+        "score": 0.19083333333333333,
+        "subjectivity": 0.5111111111111111,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3422222222222222
+      }
+    },
+    {
+      "title": "Which clubs still have a lot to do in the January transfer window?",
+      "description": "With only a few days left to go in the January transfer window, which are the clubs in need of doing some business before the deadline slams shut on Monday?",
+      "source": "ESPN",
+      "url": "https://www.espn.com/soccer/story/_/id/43583317/man-united-arsenal-clubs-january-transfer-work-do",
+      "published_at": "2025-01-28T09:31:49Z",
+      "sentiment": {
+        "score": -0.04,
+        "subjectivity": 0.3666666666666667,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.4433333333333333
+      }
+    },
+    {
+      "title": "Maternal mental health matters: Indicators for perinatal mental health—A scoping review",
+      "description": "Perinatal mental health disorders are a significant contributor to morbidity and mortality in childbearing women. The World Health Organization recommends all women be screened for mental health disorders postnatally and have diagnostic and management service…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0317998",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": -0.0030000000000000057,
+        "subjectivity": 0.335,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.46549999999999997
+      }
+    },
+    {
+      "title": "The Chiefs will face the Eagles as they seek a Super Bowl three-peat",
+      "description": "Patrick Mahomes, Travis Kelce and the Kansas City Chiefs are going for a three-peat in a Super Bowl rematch",
+      "source": "ABC News",
+      "url": "https://abcnews.go.com/Sports/wireStory/mahomes-chiefs-face-hurts-barkley-eagles-seek-super-118126516",
+      "published_at": "2025-01-26T23:39:01Z",
+      "sentiment": {
+        "score": 0.19999999999999998,
+        "subjectivity": 0.6666666666666666,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.23333333333333334
+      }
+    },
+    {
+      "title": "Watson Cast & Character Guide",
+      "description": "Watson Cast & Character Guidescreenrant.com",
+      "source": "Screen Rant",
+      "url": "https://screenrant.com/watson-cast-character-guide/",
+      "published_at": "2025-01-28T02:42:30Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "How the Capybara Won My Heart—and Almost Everyone Else’s",
+      "description": "Gary Shteyngart, the author of “The Russian Debutante’s Handbook” and “Our Country Friends,” reports on the craze for capybaras on Instagram, YouTube, and TikTok, and travels to Japan, Argentina, Brazil, and Florida to spend time with the giant rodent.",
+      "source": "The New Yorker",
+      "url": "https://www.newyorker.com/magazine/2025/02/03/how-the-capybara-won-my-heart-and-almost-everyone-elses",
+      "published_at": "2025-01-27T11:00:00Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.5,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.35
+      }
+    },
+    {
+      "title": "Papers: Rashford suitors hope for cut-price deal",
+      "description": "The top stories and transfer rumours from Tuesday's newspapers...",
+      "source": "Sky Sports",
+      "url": "https://www.skysports.com/football/transfer-paper-talk/12709/13297949/marcus-rashford-suitors-hope-for-cut-price-deal-after-manchester-united-head-coach-ruben-amorims-comments-paper-talk",
+      "published_at": "2025-01-27T22:25:00Z",
+      "sentiment": {
+        "score": 0.3,
+        "subjectivity": 0.5,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.35
+      }
+    },
+    {
+      "title": "The Hunt Report: Small-school prospects making most of opportunities at Shrine Bowl",
+      "description": "You may not know these prospects, but NFL scouts sure do",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/draft/news/the-hunt-report-small-school-prospects-making-most-of-opportunities-at-shrine-bowl/",
+      "published_at": "2025-01-27T18:55:53Z",
+      "sentiment": {
+        "score": 0.3,
+        "subjectivity": 0.6944444444444444,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.2138888888888889
+      }
+    },
+    {
+      "title": "Ted Lasso Heist: Cops Hunt Ruthless Gang After FOUR Posh Homes Featured in Hit Comedy are Raided in $2.5MILLION Crime Spree — As Rock Legend Has His $10M Home Ransacked",
+      "description": "Cops are hunting a gang of \"Ted Lasso burglars\" who raided four of the multi-million dollar properties featured on the hit comedy starring Jason Sudeikis.",
+      "source": "Radaronline.com",
+      "url": "https://radaronline.com/p/ted-lasso-heist-cops-hunt-gang-25-million-dollar-crime-spree-rock-legend-10-million-dollar-home-ransacked/",
+      "published_at": "2025-01-27T17:17:33Z",
+      "sentiment": {
+        "score": -0.6,
+        "subjectivity": 1.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.0
+      }
+    },
+    {
+      "title": "NFL Conference Championship Big Bets recap: Bettor banks $1 million via Chiefs win",
+      "description": "One bettor cashed in $1 million after K.C. won the AFC, and another lost $1 million after PHI-WSH went Over. Patrick Everson breaks down the massive betting action.",
+      "source": "Fox Sports",
+      "url": "https://www.foxsports.com/stories/nfl/nfl-conference-championship-big-bets-recap-bettor-banks-1-million-via-chiefs-win",
+      "published_at": "2025-01-27T19:44:51Z",
+      "sentiment": {
+        "score": 0.28933333333333333,
+        "subjectivity": 0.3777777777777778,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.4955555555555555
+      }
+    },
+    {
+      "title": "Why States Took a Gamble on Sports Betting",
+      "description": "States bet on sports gambling, but their residents could be paying the price",
+      "source": "The Atlantic",
+      "url": "https://www.theatlantic.com/podcasts/archive/2025/01/why-states-legalized-sports-betting/681483/",
+      "published_at": "2025-01-28T11:00:00Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "NFL Draft 2025: Shrine Bowl takeaways and standouts, including a QB who could be taken earlier than expected",
+      "description": "With Shedeur Sanders sitting out, Kyle McCord was the top-performing QB",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/draft/news/nfl-draft-2025-shrine-bowl-takeaways-and-standouts-including-a-qb-who-could-be-taken-earlier-than-expected/",
+      "published_at": "2025-01-27T20:33:39Z",
+      "sentiment": {
+        "score": -0.03,
+        "subjectivity": 0.45,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.385
+      }
+    },
+    {
+      "title": "7 Senior Bowl prospects who can raise their NFL Draft stock in Mobile",
+      "description": "Which Senior Bowl attendees can boost their stock with a good week in Mobile?",
+      "source": "SB Nation",
+      "url": "https://www.sbnation.com/nfl/2025/1/27/24352787/nfl-draft-senior-bowl-prospects-raise-stock",
+      "published_at": "2025-01-27T16:00:00Z",
+      "sentiment": {
+        "score": 0.6866666666666666,
+        "subjectivity": 0.6000000000000001,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.3999999999999999
+      }
+    },
+    {
+      "title": "Are Bournemouth PROHIBITED from hosting European fixtures? Cherries face race to comply with UEFA rules, even if they qualify this season",
+      "description": "European football isn't coming to Bournemouth right now - despite Andoni Iraola's side charging up the table",
+      "source": "FourFourTwo",
+      "url": "https://www.fourfourtwo.com/news/are-bournemouth-prohibited-from-hosting-european-fixtures-cherries-face-race-to-comply-with-uefa-rules-even-if-they-qualify-this-season",
+      "published_at": "2025-01-27T13:52:43Z",
+      "sentiment": {
+        "score": 0.057142857142857134,
+        "subjectivity": 0.17857142857142858,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.575
+      }
+    },
+    {
+      "title": "Transfer rumors, news: Man United step up Dorgu pursuit, Arsenal in for Nypan",
+      "description": "Man United are looking to fix one of their bigger defensive needs, while Arsenal is in the hunt for a top young midfielder. Transfer Talk has the latest news, gossip and rumors.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/soccer/story/_/id/43574659/transfer-rumors-news-manchester-united-patrick-dorgu-arsenal-sverre-nypan",
+      "published_at": "2025-01-27T00:00:10Z",
+      "sentiment": {
+        "score": 0.165,
+        "subjectivity": 0.575,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.2975
+      }
+    },
+    {
+      "title": "5 good reasons you should root against the Chiefs in the Super Bowl",
+      "description": "You might not be here for the Eagles, but you're definitely not here for the Chiefs.",
+      "source": "USA Today",
+      "url": "https://ftw.usatoday.com/2025/01/chiefs-eagles-super-bowl-root-against-kansas-city",
+      "published_at": "2025-01-27T14:59:05Z",
+      "sentiment": {
+        "score": 0.4066666666666666,
+        "subjectivity": 0.5888888888888889,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.34777777777777774
+      }
+    },
+    {
+      "title": "Man City leading the way as clubs smash last year's January spending",
+      "description": "Premier League clubs have already doubled their spending compared to last January - and there is still a week to go before the end of the transfer window.",
+      "source": "Sky Sports",
+      "url": "https://www.skysports.com/transfer/news/12691/13295633/man-city-lead-january-transfer-window-spending-as-premier-league-clubs-smash-last-years-total-in-hunt-for-signings",
+      "published_at": "2025-01-27T12:00:00Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.06666666666666667,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.6533333333333333
+      }
+    }
+  ]
+}

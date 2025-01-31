@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-01-29T21:03:59.364445",
+  "data": [
+    {
+      "title": "Developer creates a subpixel version of Snake that requires a microscope to play",
+      "description": "The microscopic version of Snake is the work of software developer Patrick Gillespie, who demonstrated the amazing feat on his YouTube channel.Read Entire Article",
+      "source": "TechSpot",
+      "url": "https://www.techspot.com/news/106510-developer-creates-subpixel-version-snake-small-requires-microscope.html",
+      "published_at": "2025-01-27T10:19:00Z",
+      "sentiment": {
+        "score": 0.18000000000000002,
+        "subjectivity": 0.7625,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.16625
+      }
+    },
+    {
+      "title": "The Cultural Consequences of Trump's Victory",
+      "description": "In this week's Reason Roundtable, we attempt to describe the ongoing cultural shifts occurring in the wake of President Trump's re-election.",
+      "source": "Reason",
+      "url": "https://reason.com/podcast/2025/01/27/the-cultural-consequences-of-trumps-victory/",
+      "published_at": "2025-01-27T22:14:32Z",
+      "sentiment": {
+        "score": 0.26,
+        "subjectivity": 0.1,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.69
+      }
+    },
+    {
+      "title": "People & Places",
+      "description": "National Matt McHatten, president and chief executive officer at MMG Insurance, is the new chair of the Insurance Information Institute’s (Triple-I) Executive Leadership Committee (ELC). McHatten succeeds Jennifer Kyung, CEO and founder of NextGen Underwritin…",
+      "source": "Insurance Journal",
+      "url": "https://www.insurancejournal.com/magazines/mag-people/2025/01/27/809395.htm",
+      "published_at": "2025-01-27T00:00:00Z",
+      "sentiment": {
+        "score": 0.25090909090909086,
+        "subjectivity": 0.2772727272727273,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5059090909090909
+      }
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "timestamp": "2025-01-29T21:04:07.181393",
+  "data": [
+    {
+      "title": "‘The Brutalist’ Reviews: Do Critics Think Epic Is Brutal Or Brilliant?",
+      "description": "“The Brutalist”—starring Adrien Brody—finally gets a wide release following 10 Oscar nominations. What do critics have to say about director Brady Corbet’s historical epic?",
+      "source": "Forbes",
+      "url": "https://www.forbes.com/sites/timlammers/2025/01/27/the-brutalist-reviews-do-critics-think-epic-is-brutal-or-brilliant/",
+      "published_at": "2025-01-27T20:45:51Z",
+      "sentiment": {
+        "score": 0.21071428571428572,
+        "subjectivity": 0.4714285714285714,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.43
+      }
+    },
+    {
+      "title": "Monday’s high school scores and highlights",
+      "description": "ROUNDUP BOYS BASKETBALL Tyler Hamilton (19 points), Josh Jenkins (12 points) and Julian Cash (10 points) paced the Dennis-Yarmouth offense in a 73-69 nonleague victory over Holbrook. … Ronan Coffey scored 25 points, while Jack Luccarelli added 14 points as No…",
+      "source": "Boston Herald",
+      "url": "https://www.bostonherald.com/2025/01/28/mondays-high-school-scores-and-highlights-57/",
+      "published_at": "2025-01-28T05:03:50Z",
+      "sentiment": {
+        "score": 0.29600000000000004,
+        "subjectivity": 0.5399999999999999,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.382
+      }
+    },
+    {
+      "title": "'It's pretty rare': How Dylan Strome finally found his superpowers with the Capitals",
+      "description": "The 27-year-old's development was a bit of a roller coaster. But he has found a home with the Caps and is on a path to stardom.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/nhl/story/_/id/43572213/washington-capitals-dylan-strome-scoring-career-path-development",
+      "published_at": "2025-01-27T11:19:12Z",
+      "sentiment": {
+        "score": 0.11,
+        "subjectivity": 0.9666666666666667,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.023333333333333327
+      }
+    },
+    {
+      "title": "Tottenham beat 23 clubs to signing - including Arsenal and Manchester United: report",
+      "description": "Tottenham Hotspur are having a poor season - but they still have pull in the transfer market",
+      "source": "FourFourTwo",
+      "url": "https://www.fourfourtwo.com/news/tottenham-beat-23-clubs-to-signing-including-arsenal-and-manchester-united-report",
+      "published_at": "2025-01-27T15:10:53Z",
+      "sentiment": {
+        "score": -0.44,
+        "subjectivity": 0.6,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.33999999999999997
+      }
+    },
+    {
+      "title": "Oilers vs. Kraken January 27: Injured players, inactives, latest updates",
+      "description": "Take a look at the injury report for the Edmonton Oilers (31-15-3), which currently has two players listed, as the Oilers prepare for their matchup with the Seattle Kraken (22-25-3) at Rogers Place…",
+      "source": "USA Today",
+      "url": "https://ftw.usatoday.com/article/oilers-vs-kraken-january-27-injured-players-inactives-latest-updates",
+      "published_at": "2025-01-27T02:37:00Z",
+      "sentiment": {
+        "score": -0.11666666666666667,
+        "subjectivity": 0.65,
+        "positive_words": 0,
+        "negative_words": 2,
+        "confidence": 0.365
+      }
+    },
+    {
+      "title": "Maternal mental health matters: Indicators for perinatal mental health—A scoping review",
+      "description": "Perinatal mental health disorders are a significant contributor to morbidity and mortality in childbearing women. The World Health Organization recommends all women be screened for mental health disorders postnatally and have diagnostic and management service…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0317998",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": -0.0030000000000000057,
+        "subjectivity": 0.335,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.46549999999999997
+      }
+    },
+    {
+      "title": "Early Dandy Dozen 2.0: Looking at Nashville area's top college football prospects from 2026 class",
+      "description": "From Jared Curtis to Joel Wyatt, here's an early look at potential Dandy Dozen football players from the 2026 class ahead of this year's TSSAA season.",
+      "source": "Tennessean",
+      "url": "https://www.tennessean.com/story/sports/high-school/2025/01/28/tennessee-high-school-football-dandy-dozen-early-look-2026-class-jared-curtis-tssaa/77972977007/",
+      "published_at": "2025-01-28T11:06:41Z",
+      "sentiment": {
+        "score": 0.105,
+        "subjectivity": 0.525,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.33249999999999996
+      }
+    },
+    {
+      "title": "Mbappé aiming to outperform Cristiano Ronaldo's first season",
+      "description": "Kylian Mbappé's arrival at Real Madrid differs significantly from Cristiano Ronaldo's. Mbappé joined a reigning champion, immediately contributing to title wins. \n Kylian Mbappé is on a tear. The Real Madrid star has exploded onto 2025 with an incredible goal…",
+      "source": "Worldsoccertalk.com",
+      "url": "https://worldsoccertalk.com/news/mbappe-aiming-to-outperform-cristiano-ronaldos-first-season/",
+      "published_at": "2025-01-27T12:46:21Z",
+      "sentiment": {
+        "score": 0.2225,
+        "subjectivity": 0.4847222222222222,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.3606944444444444
+      }
+    },
+    {
+      "title": "Golf cathedrals and exercise temples but grim weekend news for Tadhg Furlong",
+      "description": "Quinta do Lago is where Irish rugby teams have been going since 2019 for warm weather training before the start of the Six Nations",
+      "source": "The Irish Times",
+      "url": "https://www.irishtimes.com/sport/2025/01/27/golf-cathedrals-and-exercise-temples-but-grim-weekend-news-for-tadhg-furlong/",
+      "published_at": "2025-01-27T13:12:26Z",
+      "sentiment": {
+        "score": -0.08,
+        "subjectivity": 0.5333333333333333,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.32666666666666666
+      }
+    },
+    {
+      "title": "Rung quarter final ka Brother Enterprises bad ka Rymbai Shkenshynriah haka football ha Pdengshakap",
+      "description": "Ka Brother Enterprises bad ka Rymbai Shkenshynriah kila jam sha ka quarterfinal haka jingialehkai football haka Pdengshakap. Kane kala wan hadien ba kila khur namjop haka jingialehkai jong ka wat kaba ar kaba long ha Pdengshakap haka 25 tarik Kyllalyngkot. Ia…",
+      "source": "Syllad.com",
+      "url": "https://www.syllad.com/rung-quarter-final-ka-brother-enterprises-bad-ka-rymbai-shkenshynriah-haka-football-ha-pdengshakap/",
+      "published_at": "2025-01-27T00:30:00Z",
+      "sentiment": {
+        "score": -0.398,
+        "subjectivity": 0.5766666666666665,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.3563333333333334
+      }
+    }
+  ]
+}

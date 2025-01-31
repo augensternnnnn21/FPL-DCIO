@@ -1,10 +1,14 @@
 from typing import Dict, Optional
 from datetime import datetime
 from ..data.collector import EnvironmentalData, NewsSource
+from .config import Config
 
 class VenueCollector:
     """场地数据收集器"""
     def __init__(self):
+        self.config = Config()
+        self.venue_data = self.config.venue_data
+        
         # 球场基础数据
         self.stadium_data = {
             'Arsenal': {
@@ -212,41 +216,75 @@ class VenueCollector:
             'Luton': 0.82,
         }
     
-    def get_venue_data(self, home_team: str, away_team: str, 
-                      attendance_percentage: float = None) -> Dict:
-        """获取场地数据"""
-        stadium = self.stadium_data.get(home_team, {
-            'name': f"{home_team} Stadium",
-            'capacity': 40000,
-            'pitch_quality': 0.85,
-            'roof_coverage': 0.7,
-        })
+    def get_venue_data(self, team_name: str) -> Optional[Dict]:
+        """获取球队场地数据"""
+        return self.venue_data.get(team_name)
         
-        # 计算观众因素
-        crowd_factor = self._compute_crowd_factor(
-            home_team, 
-            attendance_percentage or 0.8
-        )
+    def calculate_venue_impact(self, team_name: str) -> Dict:
+        """计算场地对比赛的影响"""
+        venue = self.get_venue_data(team_name)
+        if not venue:
+            return {
+                'impact_score': 0.0,
+                'factors': {}
+            }
+            
+        # 计算场地容量影响（基于平均容量60000）
+        capacity_impact = min(1.0, venue['capacity'] / 60000)
         
-        # 计算场地状况
-        pitch_condition = self._compute_pitch_condition(
-            stadium['pitch_quality'],
-            stadium['roof_coverage']
-        )
+        # 计算球场大小影响（基于标准尺寸105x68）
+        pitch_length, pitch_width = venue['pitch_size']
+        size_variance = abs((pitch_length * pitch_width) - (105 * 68)) / (105 * 68)
+        pitch_impact = 1 - min(1.0, size_variance)
+        
+        # 计算球迷影响
+        fan_impact = self._calculate_fan_impact(venue)
+        
+        # 综合影响评分 (场地40%, 球迷60%)
+        impact_score = (capacity_impact * 0.2 + 
+                       pitch_impact * 0.2 + 
+                       fan_impact * 0.6)
         
         return {
-            'is_home': True,  # 主场
-            'stadium_name': stadium['name'],
-            'capacity': stadium['capacity'],
-            'pitch_condition': pitch_condition,
-            'crowd_factor': crowd_factor
+            'impact_score': impact_score,
+            'factors': {
+                'capacity_impact': capacity_impact,
+                'pitch_impact': pitch_impact,
+                'fan_impact': fan_impact,
+                'stadium_name': venue['name'],
+                'location': venue['location']
+            }
         }
+        
+    def _calculate_fan_impact(self, venue: Dict) -> float:
+        """计算球迷影响力"""
+        weights = self.config.fan_impact_weights
+        
+        # 计算上座率
+        attendance_ratio = venue['average_attendance'] / venue['capacity']
+        
+        # 计算季票持有率
+        season_ticket_ratio = venue['season_ticket_holders'] / venue['capacity']
+        
+        # 计算各个因素的影响
+        atmosphere_impact = venue['atmosphere_rating'] * weights['atmosphere_rating']
+        attendance_impact = attendance_ratio * weights['attendance_ratio']
+        season_ticket_impact = season_ticket_ratio * weights['season_ticket_ratio']
+        noise_impact = venue['fan_noise_level'] * weights['noise_level']
+        
+        # 综合计算
+        total_impact = (atmosphere_impact + 
+                       attendance_impact + 
+                       season_ticket_impact + 
+                       noise_impact)
+        
+        return min(1.0, total_impact)
         
     def create_venue_impact(self, home_team: str, away_team: str,
                           match_time: datetime,
                           attendance_percentage: float = None) -> EnvironmentalData:
         """创建场地环境影响数据"""
-        venue_data = self.get_venue_data(home_team, away_team, attendance_percentage)
+        venue_data = self.get_venue_data(home_team)
         
         # 计算影响严重程度
         severity = self._compute_venue_severity(venue_data)

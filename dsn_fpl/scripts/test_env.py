@@ -1,76 +1,68 @@
-from datetime import datetime
-from dsn_fpl.src.core.config import Config
-from dsn_fpl.src.core.data.weather_collector import WeatherCollector
+import asyncio
+from pathlib import Path
 from dsn_fpl.src.core.data.media_collector import MediaCollector
+from dsn_fpl.src.core.data.weather_collector import WeatherCollector
+from dsn_fpl.src.core.data.config import Config
 
-def test_weather_api():
-    """测试天气API"""
-    config = Config()
-    if not config.has_weather_api:
-        print("❌ 未配置天气API密钥")
-        return
-
-    collector = WeatherCollector(api_key=config.weather_api_key)
-    try:
-        # 测试阿森纳主场的天气数据
-        weather_data = collector.get_weather_data('Arsenal')
-        if weather_data:
-            print("✅ 天气API测试成功")
-            print(f"温度: {weather_data['temperature']}°C")
-            print(f"降水: {weather_data['precipitation']}mm")
-            print(f"风速: {weather_data['wind_speed']:.1f}m/s")
-            print(f"湿度: {weather_data['humidity']}%")
-            print(f"天气状况: {weather_data['condition']}")
-        else:
-            print("❌ 获取天气数据失败")
-    except Exception as e:
-        print(f"❌ 天气API测试失败: {e}")
-
-def test_news_api():
-    """测试新闻API和情感分析"""
-    config = Config()
-    if not config.has_news_api:
-        print("❌ 未配置新闻API密钥")
-        return
-
-    collector = MediaCollector(news_api_key=config.news_api_key)
-    try:
-        # 测试获取有关阿森纳萨卡的新闻
-        articles = collector.get_media_data("Saka", "Arsenal", days_back=3)
+async def test_media_collector():
+    """测试媒体数据收集器"""
+    print("\n测试媒体数据收集...")
+    
+    # 初始化收集器
+    collector = MediaCollector(news_api_key=Config().news_api_key)
+    
+    # 测试连接
+    await collector.initialize()
+    
+    # 测试数据获取
+    test_cases = [
+        ("Saka", "Arsenal"),
+        ("Haaland", "Manchester City"),
+        ("Salah", "Liverpool")
+    ]
+    
+    for player, team in test_cases:
+        print(f"\n获取 {player} ({team}) 的媒体数据:")
+        articles = await collector.get_media_data(player, team, days_back=3)
         if articles:
-            print("✅ 新闻API测试成功")
-            print(f"获取到 {len(articles)} 篇相关文章")
+            print(f"找到 {len(articles)} 篇相关文章")
             for i, article in enumerate(articles[:3], 1):
                 print(f"\n文章 {i}:")
                 print(f"标题: {article['title']}")
                 print(f"来源: {article['source']}")
                 print(f"情感得分: {article['sentiment']['score']:.2f}")
-                print(f"主观性: {article['sentiment']['subjectivity']:.2f}")
                 print(f"置信度: {article['sentiment']['confidence']:.2f}")
-                
-            # 测试媒体影响分析
-            impact = collector.create_media_impact("Saka", "Arsenal")
-            if impact:
-                print("\n媒体影响分析:")
-                print(f"描述: {impact.description}")
-                print(f"严重程度: {impact.severity:.2f}")
-                print(f"置信度: {impact.confidence:.2f}")
-                print(f"事件类型: {impact.event_type}")
         else:
-            print("❌ 未找到相关新闻")
-    except Exception as e:
-        print(f"❌ 新闻API测试失败: {e}")
+            print("未找到相关文章")
+            
+    # 关闭收集器
+    await collector.close()
 
-def main():
-    """主函数"""
-    print("开始测试环境配置...")
-    print("\n1. 测试天气API")
-    print("-" * 50)
-    test_weather_api()
+async def test_weather_collector():
+    """测试天气数据收集器"""
+    print("\n测试天气数据收集...")
     
-    print("\n2. 测试新闻API和情感分析")
-    print("-" * 50)
-    test_news_api()
+    collector = WeatherCollector(api_key=Config().weather_api_key)
+    
+    # 测试阿森纳主场天气
+    weather = collector.get_weather_data("Arsenal")
+    if weather:
+        print("\n阿森纳主场天气:")
+        print(f"温度: {weather['temperature']}°C")
+        print(f"降水量: {weather['precipitation']}mm")
+        print(f"风速: {weather['wind_speed']}m/s")
+        print(f"湿度: {weather['humidity']}%")
+        print(f"天气状况: {weather['condition']}")
+
+async def main():
+    """主测试函数"""
+    print("开始环境数据测试...")
+    
+    # 测试媒体数据收集
+    await test_media_collector()
+    
+    # 测试天气数据收集
+    await test_weather_collector()
 
 if __name__ == "__main__":
-    main() 
+    asyncio.run(main()) 

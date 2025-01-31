@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-01-29T21:03:56.899362",
+  "data": [
+    {
+      "title": "Hawke’s Bay shearer Rowland Smith triumphs at Taihape",
+      "description": "Results from the weekend's Taihape Shears and Tapawera Shears.",
+      "source": "New Zealand Herald",
+      "url": "https://www.nzherald.co.nz/the-country/news/hawkes-bay-shearer-rowland-smith-triumphs-at-taihape/UR5WJEO7C5BP7BD5JA3UWPN47U/",
+      "published_at": "2025-01-26T21:09:01Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    },
+    {
+      "title": "M-Sec promotes the accumulation of intracellular HTLV-1 Gag puncta and the incorporation of Env into viral particles",
+      "description": "Author summary Human T-cell leukemia virus type 1 (HTLV-1) causes an aggressive blood cancer known as ATL and a neurodegenerative condition known as HAM/TSP. HTLV-1 infects CD4+ T lymphocytes, and induces or upregulates the expression of a wide array of cellu…",
+      "source": "Plos.org",
+      "url": "https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1012919",
+      "published_at": "2025-01-27T14:00:00Z",
+      "sentiment": {
+        "score": -0.03,
+        "subjectivity": 0.25,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.5249999999999999
+      }
+    },
+    {
+      "title": "Enzo Maresca Needs Ruthless Streak To Save Chelsea From Destruction",
+      "description": "Given that the West London side has spent a quarter of a billion on its midfield, it is truly bizarre that they are left with such a weak option in this position.",
+      "source": "Forbes",
+      "url": "https://www.forbes.com/sites/zakgarnerpurkis/2025/01/26/enzo-maresca-needs-ruthless-streak-to-save-chelsea-from--destruction/",
+      "published_at": "2025-01-26T20:49:21Z",
+      "sentiment": {
+        "score": -0.3075,
+        "subjectivity": 0.4708333333333334,
+        "positive_words": 0,
+        "negative_words": 1,
+        "confidence": 0.43041666666666656
+      }
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "timestamp": "2025-01-29T21:04:12.014523",
+  "data": [
+    {
+      "title": "Every Super Bowl halftime performer in history: Kendrick Lamar, Rihanna, Prince, Janet Jackson and more",
+      "description": "Check out the list of artists who've taken the stage for every Super Bowl halftime show",
+      "source": "CBS Sports",
+      "url": "https://www.cbssports.com/nfl/news/every-super-bowl-halftime-performer-in-history-kendrick-lamar-rihanna-prince-janet-jackson-and-more/",
+      "published_at": "2025-01-26T18:16:35Z",
+      "sentiment": {
+        "score": 0.23333333333333328,
+        "subjectivity": 0.611111111111111,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.27222222222222225
+      }
+    },
+    {
+      "title": "Martinez strikes as Man Utd win at Fulham",
+      "description": "Lisandro Martinez's wickedly deflected shot and Toby Collyer's 89th-minute header off the line took Manchester United to a rare Premier League win under Ruben Amorim, with the 1-0 victory at Fulham edging them up to 12th in the table.",
+      "source": "Sky Sports",
+      "url": "https://www.skysports.com/football/news/11661/13295203/fulham-0-1-manchester-united-lisandro-martinezs-deflected-shot-earns-ruben-amorim-his-fourth-premier-league-win-as-united-boss",
+      "published_at": "2025-01-26T20:58:00Z",
+      "sentiment": {
+        "score": 0.6466666666666667,
+        "subjectivity": 0.5666666666666668,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.42333333333333323
+      }
+    },
+    {
+      "title": "Late Martinez strike earns Man Utd much-needed victory at Fulham",
+      "description": "LONDON :A deflected late strike from Lisandro Martinez earned Manchester United a much-needed 1-0 victory at Fulham in the Premier League on Sunday.Looking for just their fourth league win since coach Ruben Amorim succeeded Erik ten Hag in November, United cr…",
+      "source": "CNA",
+      "url": "https://www.channelnewsasia.com/sport/late-martinez-strike-earns-man-utd-much-needed-victory-fulham-4897946",
+      "published_at": "2025-01-26T21:12:28Z",
+      "sentiment": {
+        "score": 0.2906666666666667,
+        "subjectivity": 0.32,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.5959999999999999
+      }
+    },
+    {
+      "title": "Martínez goal gives stale Man Utd win at Fulham",
+      "description": "Expert recap and game analysis of the Manchester United vs. Fulham English Premier League game from January 26, 2025 on ESPN.",
+      "source": "ESPN",
+      "url": "https://www.espn.com/soccer/report/_/gameId/704503",
+      "published_at": "2025-01-26T20:57:34Z",
+      "sentiment": {
+        "score": 0.14,
+        "subjectivity": 0.34,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.5219999999999999
+      }
+    },
+    {
+      "title": "Lisandro Martínez’s lucky winner gives Manchester United victory at Fulham",
+      "description": "The match itself was a dismal spectacle but Ruben Amorim will be satisfied with another good result away from home",
+      "source": "The Irish Times",
+      "url": "https://www.irishtimes.com/sport/soccer/2025/01/26/lisandro-martinezs-lucky-winner-gives-manchester-united-victory-at-fulham/",
+      "published_at": "2025-01-26T21:37:30Z",
+      "sentiment": {
+        "score": 0.5733333333333333,
+        "subjectivity": 0.8111111111111112,
+        "positive_words": 2,
+        "negative_words": 0,
+        "confidence": 0.2522222222222221
+      }
+    },
+    {
+      "title": "‘Winning helps a lot’ – Ruben Amorim reacts as Lisandro Martinez snatches victory for Manchester United at Fulham",
+      "description": "Lisandro Martinez's deflected 78th-minute strike earned Manchester United a hard-fought and much-needed 1-0 victory at Fulham.",
+      "source": "Independent.ie",
+      "url": "https://www.independent.ie/sport/soccer/premier-league/winning-helps-a-lot-ruben-amorim-reacts-as-lisandro-martinez-snatches-victory-for-manchester-united-at-fulham/a1241107264.html",
+      "published_at": "2025-01-26T21:14:16Z",
+      "sentiment": {
+        "score": 0.5,
+        "subjectivity": 0.75,
+        "positive_words": 1,
+        "negative_words": 0,
+        "confidence": 0.235
+      }
+    }
+  ]
+}

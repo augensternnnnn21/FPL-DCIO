@@ -22,7 +22,7 @@ class DSNModel(nn.Module):
         config = config or {}
         
         # 神经网络层
-        self.input_dim = 18
+        self.input_dim = 55  # 更新为实际特征维度：12(quantum) + 10(perturbation) + 4(weather) + 3(media) + 2(venue) + 5(other) + 19(base)
         self.hidden_dim = config.get('hidden_dim', 128)
         
         # 添加批次归一化和更复杂的特征提取器
@@ -95,6 +95,21 @@ class DSNModel(nn.Module):
             # 获取球员基础统计数据
             stats = batch_data['stats'][player_id]
             
+            # 获取天气数据
+            weather_features = self._process_weather_data(
+                batch_data['weather_data'].get(player_id, {})
+            )
+            
+            # 获取媒体数据
+            media_features = self._process_media_data(
+                batch_data['media_data'].get(player_id, [])
+            )
+            
+            # 获取场地数据
+            venue_features = self._process_venue_data(
+                batch_data['venue_data'].get(player_id, {})
+            )
+            
             # 合并特征，添加默认值处理
             impact = env_impacts.get(player_id)
             impact_score = impact.impact_score if impact is not None else 0.0
@@ -108,30 +123,56 @@ class DSNModel(nn.Module):
             # 扩展特征
             quantum_state = torch.tensor(self.q_players[player_id]._quantum_state.current_form, dtype=torch.float32)
             perturbation_tensor = torch.tensor(perturbation, dtype=torch.float32)
-            other_features = torch.tensor([
-                impact_score / 10.0,  # 归一化环境影响
-                form,
-                fitness,
-                momentum,
-                potential
+            
+            # 基础统计特征
+            base_features = torch.tensor([
+                float(stats.get('minutes', 0)) / 90.0,  # 归一化出场时间
+                float(stats.get('total_points', 0)) / 20.0,  # 归一化总分
+                float(stats.get('goals_scored', 0)) / 3.0,  # 归一化进球数
+                float(stats.get('assists', 0)) / 3.0,  # 归一化助攻数
+                float(stats.get('clean_sheets', 0)) / 1.0,  # 归一化零封数
+                float(stats.get('goals_conceded', 0)) / 3.0,  # 归一化失球数
+                float(stats.get('own_goals', 0)) / 1.0,  # 归一化乌龙球数
+                float(stats.get('penalties_saved', 0)) / 1.0,  # 归一化扑点数
+                float(stats.get('penalties_missed', 0)) / 1.0,  # 归一化罚失点球数
+                float(stats.get('yellow_cards', 0)) / 1.0,  # 归一化黄牌数
+                float(stats.get('red_cards', 0)) / 1.0,  # 归一化红牌数
+                float(stats.get('saves', 0)) / 5.0,  # 归一化扑救数
+                float(stats.get('bonus', 0)) / 3.0,  # 归一化奖励分
+                float(stats.get('bps', 0)) / 1000.0,  # 归一化BPS
+                float(stats.get('influence', 0)) / 100.0,  # 归一化影响力
+                float(stats.get('creativity', 0)) / 100.0,  # 归一化创造力
+                float(stats.get('threat', 0)) / 100.0,  # 归一化威胁值
+                float(stats.get('ict_index', 0)) / 100.0,  # 归一化ICT指数
+                float(stats.get('selected_by_percent', 0)) / 100.0  # 归一化选择率
             ], dtype=torch.float32)
             
-            print(f"Player {player_id} feature dimensions:")
-            print(f"- Quantum state: {quantum_state.shape}")
-            print(f"- Perturbation: {perturbation_tensor.shape}")
-            print(f"- Other features: {other_features.shape}")
-            
+            # 合并所有特征
             player_features = torch.cat([
                 quantum_state,
                 perturbation_tensor,
-                other_features
+                weather_features,
+                media_features,
+                venue_features,
+                torch.tensor([impact_score, form, fitness, momentum, potential], dtype=torch.float32),
+                base_features
             ])
-            print(f"Total player features shape: {player_features.shape}")
+            
+            # 打印特征维度
+            print(f"Feature dimensions:")
+            print(f"quantum_state: {quantum_state.shape}")
+            print(f"perturbation_tensor: {perturbation_tensor.shape}")
+            print(f"weather_features: {weather_features.shape}")
+            print(f"media_features: {media_features.shape}")
+            print(f"venue_features: {venue_features.shape}")
+            print(f"other_features: {torch.tensor([impact_score, form, fitness, momentum, potential], dtype=torch.float32).shape}")
+            print(f"base_features: {base_features.shape}")
+            print(f"Total features: {player_features.shape}")
+            
             features.append(player_features)
         
         # 5. 特征提取
         x = torch.stack(features)
-        print(f"Features shape after stack: {x.shape}")
         x = x.to(torch.float32)
         
         # 添加批次归一化
@@ -140,15 +181,15 @@ class DSNModel(nn.Module):
         # 6. 特征提取
         x = self.feature_extractor(x)
         
-        # 6. 时序处理
+        # 7. 时序处理
         x = x.unsqueeze(0)  # 添加批次维度
         x, _ = self.lstm(x)
         x = x.squeeze(0)  # 移除批次维度
         
-        # 7. 预测
+        # 8. 预测
         predictions = self.predictor(x)
         
-        # 8. 更新策略图
+        # 9. 更新策略图
         strategy = Strategy(
             player_ids=batch_data['player_ids'],
             formation=batch_data['formation'],
@@ -159,6 +200,65 @@ class DSNModel(nn.Module):
         self.nash_graph.add_strategy(strategy)
         
         return predictions
+        
+    def _process_weather_data(self, weather_data: Dict) -> torch.Tensor:
+        """处理天气数据"""
+        if not weather_data:
+            return torch.zeros(4)  # 默认特征维度
+            
+        features = [
+            weather_data.get('temperature', 20) / 40,  # 归一化温度
+            weather_data.get('precipitation', 0),  # 已经是0-1
+            weather_data.get('wind_speed', 0) / 10,  # 归一化风速
+            weather_data.get('humidity', 50) / 100  # 归一化湿度
+        ]
+        
+        return torch.tensor(features, dtype=torch.float32)
+        
+    def _process_media_data(self, media_articles: List[Dict]) -> torch.Tensor:
+        """处理媒体数据"""
+        if not media_articles:
+            return torch.zeros(3)  # 默认特征维度
+            
+        # 计算平均情感得分
+        sentiment_scores = [
+            article['sentiment']['score']
+            for article in media_articles
+        ]
+        avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
+        
+        # 计算报道强度
+        coverage_intensity = min(len(media_articles) / 10, 1.0)
+        
+        # 计算平均置信度
+        confidence = sum(
+            article['sentiment']['confidence']
+            for article in media_articles
+        ) / len(media_articles)
+        
+        features = [
+            avg_sentiment,  # 已经是-1到1
+            coverage_intensity,  # 0到1
+            confidence  # 0到1
+        ]
+        
+        return torch.tensor(features, dtype=torch.float32)
+        
+    def _process_venue_data(self, venue_data: Dict) -> torch.Tensor:
+        """处理场地数据"""
+        if not venue_data:
+            return torch.zeros(2)  # 更新特征维度为2
+            
+        # 计算场地特征
+        capacity_normalized = venue_data.get('capacity', 40000) / 75000  # 归一化容量
+        attendance_ratio = venue_data.get('average_attendance', 30000) / venue_data.get('capacity', 40000)
+        
+        features = [
+            capacity_normalized,  # 容量 (0-1)
+            attendance_ratio,  # 上座率 (0-1)
+        ]
+        
+        return torch.tensor(features, dtype=torch.float32)
         
     def find_optimal_strategy(self) -> Strategy:
         """找到最优策略"""

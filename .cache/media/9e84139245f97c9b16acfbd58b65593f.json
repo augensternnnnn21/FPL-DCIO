@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-01-29T21:03:58.262736",
+  "data": [
+    {
+      "title": "An Arm and a Leg: The ‘Shkreli Awards’ — For Dysfunction and Profiteering in Health Care",
+      "description": "The Lown Institute, a health care think tank, holds a contest every year for the most outrageous stories of greed in health care.",
+      "source": "Kffhealthnews.org",
+      "url": "https://kffhealthnews.org/news/podcast/an-arm-and-a-leg-shkreli-awards-dysfunction-profiteering-health-care/",
+      "published_at": "2025-01-27T10:00:00Z",
+      "sentiment": {
+        "score": -0.15,
+        "subjectivity": 0.75,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.175
+      }
+    },
+    {
+      "title": "2025-01-27 Emacs news",
+      "description": "\nUpcoming events (iCal file, Org):\n\nEmacs Berlin (hybrid, in English) https://emacs-berlin.org/ Wed Jan 29 0930 America/Vancouver - 1130 America/Chicago - 1230 America/Toronto - 1730 Etc/GMT - 1830 Europe/Berlin - 2300 Asia/Kolkata – Thu Jan 3…",
+      "source": "Sachachua.com",
+      "url": "https://sachachua.com/blog/2025/01/2025-01-27-emacs-news/",
+      "published_at": "2025-01-27T15:54:41Z",
+      "sentiment": {
+        "score": 0.0,
+        "subjectivity": 0.0,
+        "positive_words": 0,
+        "negative_words": 0,
+        "confidence": 0.7
+      }
+    }
+  ]
+}
