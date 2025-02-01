@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 import json
 import os
+import logging
 
 class FPLDataset(Dataset):
     def __init__(self, config, split='train'):
@@ -12,7 +13,21 @@ class FPLDataset(Dataset):
         self.split = split
         
         # 加载数据
+        print(f"加载{split}数据...")
         self.data = self._load_data()
+        
+        # 预处理数据分组 - 优化分组过程
+        print(f"预处理{split}数据分组...")
+        # 1. 先按season和name进行排序
+        self.data = self.data.sort_values(['season', 'name', 'gameweek'])
+        
+        # 2. 使用字典推导式一次性创建分组
+        self.grouped_data = {
+            (season, name): group.copy() 
+            for (season, name), group in self.data.groupby(['season', 'name'])
+        }
+        
+        print(f"{split}数据分组完成，共{len(self.grouped_data)}个分组")
         
         # 特征标准化
         self.scalers = self._fit_scalers() if split == 'train' else None
@@ -20,23 +35,26 @@ class FPLDataset(Dataset):
         
     def _load_data(self):
         """加载原始数据"""
-        data_path = os.path.join(self.config.data_path, 'processed', f'{self.split}.csv')
+        # 主数据文件在 saman_project/data/processed/ 下
+        data_path = os.path.join('saman_project', 'data', 'processed', f'{self.split}.csv')
         if not os.path.exists(data_path):
-            raise FileNotFoundError(
-                f"找不到{self.split}数据文件。请先运行预处理脚本: "
-                "python saman_project/utils/preprocess.py"
-            )
+            raise FileNotFoundError(f"找不到数据文件: {data_path}。请先运行预处理脚本: python saman_project/utils/preprocess.py")
+        
+        print(f"加载{self.split}数据...")
         df = pd.read_csv(data_path)
         
-        # 加载额外数据
-        self._load_additional_data(df)
+        # 确保必要的列存在
+        required_columns = ['name', 'season', 'gameweek', 'total_points']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"数据文件缺少必要的列: {missing_columns}")
         
         return df
     
     def _load_additional_data(self, df):
         """加载额外的数据源"""
         # 加载天气数据
-        weather_path = os.path.join(self.config.data_path, 'weather')
+        weather_path = os.path.join('saman_project', self.config.data_path, 'weather')
         weather_data = {}
         if os.path.exists(weather_path):
             for file in os.listdir(weather_path):
@@ -45,7 +63,7 @@ class FPLDataset(Dataset):
                         weather_data[file.split('.')[0]] = json.load(f)
         
         # 加载新闻数据
-        news_path = os.path.join(self.config.data_path, 'news')
+        news_path = os.path.join('saman_project', self.config.data_path, 'news')
         news_data = {}
         if os.path.exists(news_path):
             for file in os.listdir(news_path):
@@ -184,30 +202,26 @@ class FPLDataset(Dataset):
             ]
         }
     
-    def _load_historical_data(self, current_gw):
-        """加载历史数据"""
+    def _load_historical_data(self, current_gw, season, player_name):
+        """加载历史数据 - 优化性能"""
         history = []
-        for gw in range(max(1, current_gw - 5), current_gw):
-            try:
-                # 只加载gameweek数据
-                gw_data = pd.read_csv(f'data/2023-24/gws/gw{gw}.csv')
-                
-                # 确保列名存在
-                if 'element' not in gw_data.columns:
-                    gw_data['element'] = gw_data.index
-                
-                history.append(gw_data)
-            except Exception as e:
-                print(f"Warning: Failed to load data for GW{gw}: {str(e)}")
-                continue
+        player_season_data = self.grouped_data.get((season, player_name))
+        
+        if player_season_data is not None:
+            # 使用布尔索引一次性获取过去5轮的数据
+            mask = (player_season_data['gameweek'] >= max(1, current_gw - 5)) & (player_season_data['gameweek'] < current_gw)
+            history_data = player_season_data[mask]
             
+            # 按轮次分组并转换为列表
+            history = [group for _, group in history_data.groupby('gameweek')]
+        
         return history
 
     def _load_current_context(self, gameweek):
         """加载当前环境数据"""
         try:
-            # 加载赛程
-            fixtures = pd.read_csv('data/2023-24/fixtures.csv')
+            # fixtures.csv 在2023-24赛季目录下
+            fixtures = pd.read_csv(os.path.join('data', '2023-24', 'fixtures.csv'))
             
             # 处理赛程数据中的轮次信息
             if 'event' not in fixtures.columns and 'gameweek' in fixtures.columns:
@@ -217,7 +231,7 @@ class FPLDataset(Dataset):
             
             # 加载球员最新状态
             try:
-                latest_gw = pd.read_csv(f'data/2023-24/gws/gw{gameweek-1}.csv')
+                latest_gw = pd.read_csv(os.path.join('data', '2023-24', 'gws', f'gw{gameweek-1}.csv'))
             except:
                 latest_gw = pd.DataFrame()
             
@@ -242,32 +256,92 @@ class FPLDataset(Dataset):
                 'player_state': pd.DataFrame()
             }
 
-    def _calculate_form(self, history_data, player_id):
-        """计算球员状态"""
+    def _calculate_form(self, history_data, player_name):
+        """计算球员状态（只使用历史数据）"""
         recent_games = [
-            df[df['element'] == player_id] 
-            for df in history_data
+            df[df['name'] == player_name] for df in history_data
         ]
         
-        if not recent_games:
+        if not recent_games or all(g.empty for g in recent_games):
             return {
                 'form': 0,
                 'minutes_last5': 0,
                 'avg_points': 0,
-                'trend': 0
+                'trend': 0,
+                'total_points_ma5': 0,
+                'minutes_ma5': 0,
+                'goals_scored_ma5': 0,
+                'assists_ma5': 0,
+                'clean_sheets_ma5': 0,
+                'goals_conceded_ma5': 0,
+                'own_goals_ma5': 0,
+                'penalties_saved_ma5': 0,
+                'penalties_missed_ma5': 0,
+                'yellow_cards_ma5': 0,
+                'red_cards_ma5': 0,
+                'saves_ma5': 0,
+                'bonus_ma5': 0,
+                'bps_ma5': 0,
+                'team_goals_scored_ma5': 0,
+                'team_goals_conceded_ma5': 0
             }
-            
-        points = [game['total_points'].values[0] if not game.empty else 0 
-                 for game in recent_games]
-        minutes = [game['minutes'].values[0] if not game.empty else 0 
-                  for game in recent_games]
+        
+        # 计算历史统计量
+        stats = {}
+        for stat in ['total_points', 'minutes', 'goals_scored', 'assists',
+                     'clean_sheets', 'goals_conceded', 'own_goals',
+                     'penalties_saved', 'penalties_missed', 'yellow_cards',
+                     'red_cards', 'saves', 'bonus', 'bps']:
+            values = []
+            for game in recent_games:
+                if not game.empty and stat in game.columns:
+                    values.append(game[stat].iloc[0])
+                else:
+                    values.append(0)
+            stats[f'{stat}_ma5'] = np.mean(values) if values else 0
+        
+        # 计算球队统计量
+        team_stats = {}
+        for stat in ['team_goals_scored', 'team_goals_conceded']:
+            values = []
+            for game in recent_games:
+                if not game.empty and stat in game.columns:
+                    values.append(game[stat].iloc[0])
+                else:
+                    values.append(0)
+            team_stats[f'{stat}_ma5'] = np.mean(values) if values else 0
+        
+        # 计算总出场时间
+        minutes_values = []
+        for game in recent_games:
+            if not game.empty and 'minutes' in game.columns:
+                minutes_values.append(game['minutes'].iloc[0])
+            else:
+                minutes_values.append(0)
+        total_minutes = sum(minutes_values)
+        
+        # 计算趋势
+        points_values = []
+        for game in recent_games:
+            if not game.empty and 'total_points' in game.columns:
+                points_values.append(game['total_points'].iloc[0])
+            else:
+                points_values.append(0)
+        
+        trend = 0
+        if len(points_values) > 1:
+            try:
+                trend = np.polyfit(range(len(points_values)), points_values, 1)[0]
+            except:
+                trend = 0
         
         return {
-            'form': np.mean(points),
-            'minutes_last5': sum(minutes),
-            'avg_points': np.mean(points),
-            'trend': np.polyfit(range(len(points)), points, 1)[0]
-            if len(points) > 1 else 0
+            'form': stats['total_points_ma5'],
+            'minutes_last5': total_minutes,
+            'avg_points': stats['total_points_ma5'],
+            'trend': trend,
+            **stats,
+            **team_stats
         }
 
     def __len__(self):
@@ -276,69 +350,71 @@ class FPLDataset(Dataset):
     def __getitem__(self, idx):
         """获取单个样本"""
         player_data = self.data.iloc[idx]
-        gameweek = player_data['round']
+        gameweek = player_data['gameweek']
+        season = player_data['season']
+        player_name = player_data['name']
         
-        # 1. 获取历史数据
-        history_data = self._load_historical_data(gameweek)
-        player_history = self._calculate_form(history_data, player_data['element'])
+        # 1. 获取历史数据（不包括当前轮次）
+        history_data = self._load_historical_data(gameweek, season, player_name)
+        player_history = self._calculate_form(history_data, player_name)
         
-        # 2. 获取当前环境
+        # 2. 获取当前环境（不包括当前轮次的比赛数据）
         current_context = self._load_current_context(gameweek)
         
-        # 3. 构建特征字典
+        # 3. 构建特征字典（只使用历史数据）
         features = {
             'historical': {
                 'performance': torch.FloatTensor([
-                    player_history['form'],
+                    player_history['form'],  # 使用历史form
                     player_history['minutes_last5'],
                     player_history['avg_points'],
                     player_history['trend']
                 ]),
                 'player_stats': torch.FloatTensor([
-                    player_data['total_points'],
-                    player_data['minutes'],
-                    player_data['goals_scored'],
-                    player_data['assists'],
-                    player_data['clean_sheets'],
-                    player_data['goals_conceded'],
-                    player_data['own_goals'],
-                    player_data['penalties_saved'],
-                    player_data['penalties_missed'],
-                    player_data['yellow_cards'],
-                    player_data['red_cards'],
-                    player_data['saves'],
-                    player_data['bonus'],
-                    player_data['bps']
+                    player_history['total_points_ma5'],  # 使用历史平均
+                    player_history['minutes_ma5'],
+                    player_history['goals_scored_ma5'],
+                    player_history['assists_ma5'],
+                    player_history['clean_sheets_ma5'],
+                    player_history['goals_conceded_ma5'],
+                    player_history['own_goals_ma5'],
+                    player_history['penalties_saved_ma5'],
+                    player_history['penalties_missed_ma5'],
+                    player_history['yellow_cards_ma5'],
+                    player_history['red_cards_ma5'],
+                    player_history['saves_ma5'],
+                    player_history['bonus_ma5'],
+                    player_history['bps_ma5']
                 ]),
                 'transfers': torch.FloatTensor([
-                    player_data['transfers_balance'],
-                    player_data['transfers_in'],
-                    player_data['transfers_out'],
-                    player_data['selected'],
-                    player_data['value']
+                    player_data.get('transfers_balance', 0),  # 使用get方法处理可能不存在的列
+                    player_data.get('transfers_in', 0),
+                    player_data.get('transfers_out', 0),
+                    player_data.get('selected', 0),
+                    player_data.get('value', 0)
                 ])
             },
             'context': {
                 'fixture': torch.FloatTensor([
-                    player_data['opponent_team'],
-                    player_data['was_home']
+                    player_data.get('opponent_team', 0),  # 使用get方法处理可能不存在的列
+                    player_data.get('was_home', 0)
                 ]),
                 'player_state': torch.FloatTensor([
-                    player_data['minutes_ma5'],
-                    player_data['form'],
-                    player_data['total_points_ma5']
+                    player_history['minutes_ma5'],  # 使用历史数据
+                    player_history['form'],
+                    player_history['avg_points']
                 ]),
                 'team_state': torch.FloatTensor([
-                    player_data['team_h_score'] if player_data['was_home'] else player_data['team_a_score'],
-                    player_data['team_a_score'] if player_data['was_home'] else player_data['team_h_score']
+                    player_history.get('team_goals_scored_ma5', 0),  # 使用get方法处理可能不存在的列
+                    player_history.get('team_goals_conceded_ma5', 0)
                 ])
             }
         }
         
-        # 4. 获取标签（下一轮得分）
+        # 4. 获取标签（当前轮次的实际得分）
         target = torch.FloatTensor([player_data['total_points']])
         
-        return features, target 
+        return features, target
 
     def _get_fixture_features(self, current_context, player_data):
         """提取比赛特征"""
