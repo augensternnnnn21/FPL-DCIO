@@ -148,7 +148,7 @@ def evaluate_saman_model(config, train_dataset, test_dataset):
     device = torch.device(config.training.device)
     
     # 加载模型
-    model_path = os.path.join('saman_project', 'checkpoints', 'final_model_epoch32.pth')
+    model_path = os.path.join('saman_project', 'checkpoints', 'epoch42_model.pth')
     model = SAMANModel(config).to(device)
     checkpoint = torch.load(model_path, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
